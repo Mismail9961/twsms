@@ -57,11 +57,8 @@ export async function proxy(request: NextRequest) {
   const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
 
   if (pathname === '/') {
-    if (!sessionUser) {
-      const response = NextResponse.redirect(new URL('/login', request.url))
-      return tokenInvalid ? clearInvalidSession(response) : response
-    }
-    return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
+    const response = NextResponse.next()
+    return tokenInvalid ? clearInvalidSession(response) : response
   }
 
   if (!sessionUser && !isPublicRoute) {
