@@ -1,4 +1,4 @@
-import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
+import { isNeonConfigured, dbQuery, dbQueryRequired, memoryDb } from '@/lib/db'
 import { randomUUID } from 'node:crypto'
 import type {
   Ticket,
@@ -455,7 +455,7 @@ export async function getTicketStatusHistory(ticketId: string): Promise<TicketSt
 export async function getTicketAttachments(ticketId: string): Promise<TicketAttachment[]> {
   if (isNeonConfigured()) {
     try {
-      return await dbQuery<TicketAttachment>(
+      return await dbQueryRequired<TicketAttachment>(
         `SELECT a.id, a.ticket_id, a.message_id, a.uploader_id, a.storage_path,
                 a.original_filename, a.mime_type, a.file_size, a.created_at,
                 json_build_object(
@@ -471,6 +471,7 @@ export async function getTicketAttachments(ticketId: string): Promise<TicketAtta
       )
     } catch (err) {
       console.error('[getTicketAttachments Neon Error]:', err)
+      throw err
     }
   }
 
@@ -494,11 +495,11 @@ export async function createTicketAttachment(input: {
   const createdAt = new Date().toISOString()
 
   if (isNeonConfigured()) {
-    const rows = await dbQuery<TicketAttachment>(
+    const rows = await dbQueryRequired<TicketAttachment>(
       `INSERT INTO ticket_attachments (
          id, ticket_id, uploader_id, storage_path, original_filename,
          mime_type, file_size, file_data
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, decode($8, 'base64'))
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, ticket_id, message_id, uploader_id, storage_path,
                  original_filename, mime_type, file_size, created_at`,
       [
@@ -509,7 +510,7 @@ export async function createTicketAttachment(input: {
         input.filename,
         input.mimeType,
         input.bytes.byteLength,
-        Buffer.from(input.bytes).toString('base64'),
+        Buffer.from(input.bytes),
       ]
     )
 
@@ -542,7 +543,7 @@ export async function getTicketAttachmentContent(attachmentId: string): Promise<
   bytes: Uint8Array
 } | null> {
   if (isNeonConfigured()) {
-    const rows = await dbQuery<{
+    const rows = await dbQueryRequired<{
       ticket_id: string
       original_filename: string
       mime_type: string
@@ -582,7 +583,7 @@ export async function deleteClientTicketAttachment(
   clientId: string
 ): Promise<{ id: string; ticketId: string } | null> {
   if (isNeonConfigured()) {
-    const rows = await dbQuery<{ id: string; ticket_id: string }>(
+    const rows = await dbQueryRequired<{ id: string; ticket_id: string }>(
       `DELETE FROM ticket_attachments a
        USING tickets t
        WHERE a.ticket_id = t.id

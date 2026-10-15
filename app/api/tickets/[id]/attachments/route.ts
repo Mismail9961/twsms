@@ -80,8 +80,21 @@ export async function POST(
     return NextResponse.json({ attachment }, { status: 201 })
   } catch (error) {
     console.error('[Ticket attachment upload error]:', error)
+    const databaseError = error as { code?: string; message?: string }
+    if (
+      databaseError.code === '42703' &&
+      databaseError.message?.includes('file_data')
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'File storage is not set up in the database yet. Apply the ticket_attachments file_data migration from db/schema.sql, then try again.',
+        },
+        { status: 503 }
+      )
+    }
     return NextResponse.json(
-      { error: 'The file could not be saved. Please try again.' },
+      { error: 'The file could not be saved to the database. Please try again.' },
       { status: 500 }
     )
   }

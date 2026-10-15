@@ -10,10 +10,21 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { formatDateTime, formatFileSize } from '@/lib/utils'
+import { formatFileSize } from '@/lib/utils'
 import type { Role, TicketAttachment } from '@/lib/types'
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024
+
+function formatAttachmentDate(date: string): string {
+  return `${new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(date))} UTC`
+}
 
 interface SharedDocumentsProps {
   ticketId: string
@@ -229,7 +240,7 @@ export function SharedDocuments({
                         {attachment.uploader?.full_name
                           ? ` · Shared by ${attachment.uploader.full_name}`
                           : ''}
-                        {` · ${formatDateTime(attachment.created_at)}`}
+                        {` · ${formatAttachmentDate(attachment.created_at)}`}
                       </span>
                     </span>
                   </span>
