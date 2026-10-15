@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, UserMinus, Paperclip } from 'lucide-react'
+import { ArrowLeft, UserMinus } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
 import {
   getTicketById,
@@ -12,9 +12,10 @@ import {
 import { StatusBadge } from '@/components/tickets/status-badge'
 import { PriorityBadge } from '@/components/tickets/priority-badge'
 import { TicketChat } from '@/components/tickets/ticket-chat'
+import { SharedDocuments } from '@/components/tickets/shared-documents'
 import { AdminControls } from './admin-controls'
 import { unassignEmployee } from '@/app/actions/tickets'
-import { formatDateTime, formatDate, getInitials, formatFileSize } from '@/lib/utils'
+import { formatDateTime, formatDate, getInitials } from '@/lib/utils'
 
 export default async function AdminTicketDetailPage({
   params,
@@ -169,35 +170,7 @@ export default async function AdminTicketDetailPage({
               )}
             </div>
 
-            {/* Uploaded Documents / Attachments */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-700">
-                Shared Documents & Files ({attachments.length})
-              </h3>
-
-              {attachments.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">No files attached to this request.</p>
-              ) : (
-                <div className="space-y-2">
-                  {attachments.map((att) => (
-                    <div
-                      key={att.id}
-                      className="flex items-center justify-between rounded-xl border border-gray-200 p-2.5 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Paperclip className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                        <div className="truncate text-xs font-medium text-gray-900">
-                          {att.original_filename}
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
-                        {formatFileSize(att.file_size)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <SharedDocuments ticketId={ticket.id} initialAttachments={attachments} />
 
           {/* Activity Log */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">

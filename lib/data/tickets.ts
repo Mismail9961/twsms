@@ -1,4 +1,5 @@
 import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
+import { randomUUID } from 'node:crypto'
 import type {
   Ticket,
   TicketMessage,
@@ -390,7 +391,10 @@ export async function getTicketMessages(
 
       for (const msg of messages) {
         msg.attachments = await dbQuery<TicketAttachment>(
-          'SELECT * FROM ticket_attachments WHERE message_id = $1',
+          `SELECT id, ticket_id, message_id, uploader_id, storage_path, original_filename,
+                  mime_type, file_size, created_at
+           FROM ticket_attachments
+           WHERE message_id = $1`,
           [msg.id]
         )
       }
@@ -452,7 +456,13 @@ export async function getTicketAttachments(ticketId: string): Promise<TicketAtta
   if (isNeonConfigured()) {
     try {
       return await dbQuery<TicketAttachment>(
-        `SELECT a.*, row_to_json(p.*) as uploader
+        `SELECT a.id, a.ticket_id, a.message_id, a.uploader_id, a.storage_path,
+                a.original_filename, a.mime_type, a.file_size, a.created_at,
+                json_build_object(
+                  'id', p.id,
+                  'full_name', p.full_name,
+                  'avatar_url', p.avatar_url
+                ) as uploader
          FROM ticket_attachments a
          JOIN profiles p ON a.uploader_id = p.id
          WHERE a.ticket_id = $1
@@ -470,6 +480,101 @@ export async function getTicketAttachments(ticketId: string): Promise<TicketAtta
       ...a,
       uploader: memoryDb.profiles.find((p) => p.id === a.uploader_id),
     }))
+}
+
+export async function createTicketAttachment(input: {
+  ticketId: string
+  uploaderId: string
+  filename: string
+  mimeType: string
+  bytes: Uint8Array
+}): Promise<TicketAttachment> {
+  const id = randomUUID()
+  const storagePath = `tickets/${input.ticketId}/${id}`
+  const createdAt = new Date().toISOString()
+
+  if (isNeonConfigured()) {
+    const rows = await dbQuery<TicketAttachment>(
+      `INSERT INTO ticket_attachments (
+         id, ticket_id, uploader_id, storage_path, original_filename,
+         mime_type, file_size, file_data
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, decode($8, 'base64'))
+       RETURNING id, ticket_id, message_id, uploader_id, storage_path,
+                 original_filename, mime_type, file_size, created_at`,
+      [
+        id,
+        input.ticketId,
+        input.uploaderId,
+        storagePath,
+        input.filename,
+        input.mimeType,
+        input.bytes.byteLength,
+        Buffer.from(input.bytes).toString('base64'),
+      ]
+    )
+
+    if (!rows[0]) {
+      throw new Error('The uploaded file could not be saved.')
+    }
+
+    return rows[0]
+  }
+
+  const attachment: TicketAttachment = {
+    id,
+    ticket_id: input.ticketId,
+    uploader_id: input.uploaderId,
+    storage_path: storagePath,
+    original_filename: input.filename,
+    mime_type: input.mimeType,
+    file_size: input.bytes.byteLength,
+    created_at: createdAt,
+  }
+  memoryDb.attachments.unshift(attachment)
+  memoryDb.attachmentFiles.set(id, Uint8Array.from(input.bytes))
+  return attachment
+}
+
+export async function getTicketAttachmentContent(attachmentId: string): Promise<{
+  ticketId: string
+  filename: string
+  mimeType: string
+  bytes: Uint8Array
+} | null> {
+  if (isNeonConfigured()) {
+    const rows = await dbQuery<{
+      ticket_id: string
+      original_filename: string
+      mime_type: string
+      encoded_data: string | null
+    }>(
+      `SELECT ticket_id, original_filename, mime_type,
+              encode(file_data, 'base64') AS encoded_data
+       FROM ticket_attachments
+       WHERE id = $1`,
+      [attachmentId]
+    )
+    const row = rows[0]
+    if (!row?.encoded_data) return null
+
+    return {
+      ticketId: row.ticket_id,
+      filename: row.original_filename,
+      mimeType: row.mime_type,
+      bytes: Uint8Array.from(Buffer.from(row.encoded_data, 'base64')),
+    }
+  }
+
+  const attachment = memoryDb.attachments.find((item) => item.id === attachmentId)
+  const bytes = memoryDb.attachmentFiles.get(attachmentId)
+  if (!attachment || !bytes) return null
+
+  return {
+    ticketId: attachment.ticket_id,
+    filename: attachment.original_filename,
+    mimeType: attachment.mime_type,
+    bytes,
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

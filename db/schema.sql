@@ -131,8 +131,11 @@ CREATE TABLE IF NOT EXISTS ticket_attachments (
   original_filename VARCHAR(255) NOT NULL,
   mime_type VARCHAR(100) NOT NULL,
   file_size BIGINT NOT NULL,
+  file_data BYTEA,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE ticket_attachments ADD COLUMN IF NOT EXISTS file_data BYTEA;
 
 CREATE INDEX IF NOT EXISTS idx_attachments_ticket ON ticket_attachments(ticket_id);
 

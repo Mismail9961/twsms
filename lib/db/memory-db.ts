@@ -231,6 +231,7 @@ class MemoryDb {
   ]
 
   attachments: TicketAttachment[] = []
+  attachmentFiles = new Map<string, Uint8Array>()
 
   statusHistory: TicketStatusHistory[] = [
     {

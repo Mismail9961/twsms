@@ -4,7 +4,7 @@
 
 TWSMS (Technology World Support Management System) is a web-based support management application designed to streamline customer support operations, organize support requests, and improve communication between customers and support teams.
 
-The application is built using Next.js and uses Neon PostgreSQL for database management. Its architecture provides a foundation for centralized support operations, efficient issue tracking, and future scalability.
+The application is built using Next.js and uses Neon PostgreSQL for database management. Ticket documents are stored in PostgreSQL and are only downloadable by users authorized to access that ticket. When running without Neon, the in-memory development fallback stores uploaded files only for the lifetime of the server process.
 
 ## Technology Stack
 
@@ -24,6 +24,7 @@ The system is intended to support the following capabilities, depending on the c
 - Ticket status and priority tracking.
 - Support team and user management.
 - Assignment and tracking of support requests.
+- Secure document and file sharing on tickets (4 MB per file).
 - Centralized database management.
 - Responsive user interface for desktop and mobile devices.
 - Scalable architecture for future feature development.
@@ -80,7 +81,8 @@ Do not commit environment files containing credentials or sensitive information 
 
 Ensure the database schema is initialized and all required migrations have been applied.
 For an existing database, reapply `db/schema.sql` after pulling schema updates; it
-includes idempotent migrations for the ticket serial-number and rating resolution-method columns.
+includes idempotent migrations for ticket fields and the binary data column used by
+secure ticket file sharing. Each uploaded file is limited to 4 MB.
 
 If the project uses Prisma, the following commands may be applicable:
 
@@ -184,7 +186,6 @@ Potential enhancements may include:
 - Automated email notifications.
 - Ticket prioritization and escalation.
 - Service-level agreement tracking.
-- File attachments and document management.
 - Reporting and analytics dashboards.
 - Advanced search, filtering, and pagination.
 

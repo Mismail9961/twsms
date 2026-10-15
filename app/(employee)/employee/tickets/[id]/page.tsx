@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, Paperclip } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
 import {
   getTicketById,
@@ -11,8 +11,9 @@ import {
 import { StatusBadge } from '@/components/tickets/status-badge'
 import { PriorityBadge } from '@/components/tickets/priority-badge'
 import { TicketChat } from '@/components/tickets/ticket-chat'
+import { SharedDocuments } from '@/components/tickets/shared-documents'
 import { EmployeeStatusUpdater } from './status-updater'
-import { formatDateTime, formatDate, getInitials, formatFileSize } from '@/lib/utils'
+import { formatDateTime, formatDate, getInitials } from '@/lib/utils'
 
 export default async function EmployeeTicketDetailPage({
   params,
@@ -115,6 +116,8 @@ export default async function EmployeeTicketDetailPage({
             </div>
 
           </div>
+
+          <SharedDocuments ticketId={ticket.id} initialAttachments={attachments} />
 
           {/* Assigned Co-Engineers */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
