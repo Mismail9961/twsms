@@ -1,37 +1,195 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TWSMS — Technology World Support Management System
 
-## Getting Started
+## Overview
 
-First, run the development server:
+TWSMS (Technology World Support Management System) is a web-based support management application designed to streamline customer support operations, organize support requests, and improve communication between customers and support teams.
+
+The application is built using Next.js and uses Neon PostgreSQL for database management. Its architecture provides a foundation for centralized support operations, efficient issue tracking, and future scalability.
+
+## Technology Stack
+
+- **Next.js:** Full-stack React framework for application development.
+- **React:** Component-based user interface development.
+- **TypeScript:** Type-safe application development.
+- **Neon PostgreSQL:** Managed PostgreSQL database platform.
+- **Node.js:** JavaScript runtime environment.
+- **Vercel:** Potential deployment platform for hosting the application.
+
+## Features
+
+The system is intended to support the following capabilities, depending on the current implementation:
+
+- Support ticket creation and management.
+- Customer information management.
+- Ticket status and priority tracking.
+- Support team and user management.
+- Assignment and tracking of support requests.
+- Centralized database management.
+- Responsive user interface for desktop and mobile devices.
+- Scalable architecture for future feature development.
+
+## Prerequisites
+
+Ensure the following tools and services are available before setting up the project:
+
+- Node.js compatible with the project's Next.js version.
+- npm, pnpm, or yarn.
+- Git.
+- A Neon account with a configured PostgreSQL database.
+
+## Installation and Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone <YOUR_REPOSITORY_URL>
+cd twsms
+```
+
+Replace `<YOUR_REPOSITORY_URL>` with the actual repository URL.
+
+### 2. Install Dependencies
+
+Using npm:
+
+```bash
+npm install
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env.local` file in the project root and configure the database connection:
+
+```env
+DATABASE_URL="your_neon_postgresql_connection_string"
+```
+
+Replace the placeholder with the connection string obtained from your Neon dashboard.
+
+Do not commit environment files containing credentials or sensitive information to version control.
+
+### 4. Configure the Database
+
+Ensure the database schema is initialized and all required migrations have been applied.
+
+If the project uses Prisma, the following commands may be applicable:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+If the project uses another database ORM or migration tool, follow its corresponding setup instructions.
+
+### 5. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the following URL in your browser:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+The project may follow a structure similar to the following, depending on its implementation:
 
-To learn more about Next.js, take a look at the following resources:
+```text
+twsms/
+├── public/              # Static assets
+├── src/
+│   ├── app/             # Application routes and layouts
+│   ├── components/      # Reusable UI components
+│   ├── lib/             # Database clients and utilities
+│   └── types/           # TypeScript type definitions
+├── .env.local           # Local environment configuration
+├── .gitignore
+├── next.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+TWSMS uses Neon PostgreSQL for persistent data storage.
 
-## Deploy on Vercel
+The database schema should define the entities, relationships, constraints, and indexes required by the application. Depending on the implemented functionality, these may include users, customers, support tickets, ticket assignments, messages, and activity records.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Database access should be performed securely through server-side application logic.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# twsms
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Connection string for the Neon PostgreSQL database |
+
+Additional environment variables may be required for authentication, email delivery, file storage, or other integrations.
+
+## Production Build
+
+To create and run a production build locally:
+
+```bash
+npm run build
+npm run start
+```
+
+Before deployment, verify that all required environment variables are configured and database migrations have been applied.
+
+## Deployment
+
+The application can be deployed to a Next.js-compatible hosting platform, such as Vercel.
+
+Deployment procedure:
+
+1. Push the source code to the Git repository.
+2. Import the repository into the hosting platform.
+3. Configure the required environment variables.
+4. Configure the production database and migrations.
+5. Build and deploy the application.
+6. Verify application functionality and database connectivity.
+
+## Security Considerations
+
+- Keep database credentials and secrets out of source control.
+- Validate user input on the server.
+- Enforce authentication and authorization for protected resources.
+- Apply role-based access controls where required.
+- Protect customer data and sensitive support information.
+- Use secure session management.
+- Restrict database access to authorized application environments.
+
+## Future Improvements
+
+Potential enhancements may include:
+
+- Real-time communication between customers and support agents.
+- Automated email notifications.
+- Ticket prioritization and escalation.
+- Service-level agreement tracking.
+- File attachments and document management.
+- Reporting and analytics dashboards.
+- Advanced search, filtering, and pagination.
+
+## Contributing
+
+Contributions and suggestions are welcome.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Implement and test your changes.
+4. Submit a pull request with a clear description of the proposed changes.
+
+## License
+
+Specify the applicable license before distributing or reusing this project. If no license has been provided, the project remains subject to the copyright holder's rights.
+
+---
+
+**TWSMS — Technology World Support Management System**
+
+Built with Next.js and Neon PostgreSQL.
