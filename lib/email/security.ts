@@ -1,6 +1,12 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex')
+// Short codes need a server-held key so a leaked database cannot be brute-forced offline.
+export function challengeDigest(secret: string, purpose: 'verify' | 'reset', email: string) {
+  if (purpose === 'reset') return digest(secret)
+  const signingKey = createHmac('sha256', key()).update('twsms-verification-v1').digest()
+  return createHmac('sha256', signingKey).update(`${email.trim().toLowerCase()}:${secret}`).digest('hex')
+}
 export function equalSecret(a: string, b: string) {
   return timingSafeEqual(Buffer.from(digest(a)), Buffer.from(digest(b)))
 }

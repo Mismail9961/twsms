@@ -37,14 +37,14 @@ export default async function AdminTicketsPage({
   ])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-lg min-[360px]:text-xl sm:text-2xl font-bold tracking-tight text-[#2C2772]">
             All Support Tickets ({total})
           </h2>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-slate-500">
             Global ticket queue management, employee assignment, and tracking
           </p>
         </div>
@@ -53,24 +53,24 @@ export default async function AdminTicketsPage({
         <a
           href="/api/export/tickets"
           download="technology-world-tickets.csv"
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-[#2C2772]/20 bg-white px-3.5 py-2 text-xs font-semibold text-[#2C2772] shadow-sm hover:bg-[#2C2772]/5 transition-colors"
         >
-          <Download className="h-4 w-4 text-blue-600" />
+          <Download className="h-4 w-4 text-[#2C2772]" />
           <span>Export Records (CSV)</span>
         </a>
       </div>
 
       {/* Filter Bar */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-        <form method="GET" className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+      <div className="rounded-2xl border border-[#2C2772]/15 bg-white p-3 sm:p-4 shadow-sm">
+        <form method="GET" className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 sm:gap-3">
           <div className="sm:col-span-4 relative">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
               name="search"
               defaultValue={searchQuery}
-              placeholder="Search by ticket #, subject, or client..."
-              className="w-full rounded-xl border border-gray-200 pl-10 pr-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Search by ticket #, subject..."
+              className="w-full rounded-xl border border-slate-200 pl-10 pr-4 py-2 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#2C2772] focus:outline-none focus:ring-1 focus:ring-[#2C2772]"
             />
           </div>
 
@@ -78,7 +78,7 @@ export default async function AdminTicketsPage({
             <select
               name="status"
               defaultValue={statusFilter}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base sm:text-sm text-slate-900 focus:border-[#2C2772] focus:outline-none focus:ring-1 focus:ring-[#2C2772] bg-white"
             >
               <option value="all">All Statuses</option>
               <option value="open">Open</option>
@@ -95,7 +95,7 @@ export default async function AdminTicketsPage({
             <select
               name="priority"
               defaultValue={priorityFilter}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-base sm:text-sm text-slate-900 focus:border-[#2C2772] focus:outline-none focus:ring-1 focus:ring-[#2C2772] bg-white"
             >
               <option value="all">All Priorities</option>
               <option value="low">Low</option>
@@ -109,7 +109,7 @@ export default async function AdminTicketsPage({
             <select
               name="category_id"
               defaultValue={categoryFilter}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white truncate"
+              className="w-full min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-base sm:text-sm text-slate-900 focus:border-[#2C2772] focus:outline-none focus:ring-1 focus:ring-[#2C2772] bg-white truncate"
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -120,7 +120,7 @@ export default async function AdminTicketsPage({
             </select>
             <button
               type="submit"
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              className="rounded-xl bg-[#2C2772] px-4 py-2 text-sm font-semibold text-white hover:bg-[#231f5c] transition-colors shrink-0"
             >
               Filter
             </button>
@@ -142,46 +142,46 @@ export default async function AdminTicketsPage({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/75 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                  <th className="py-3.5 px-6">Ticket ID</th>
-                  <th className="py-3.5 px-6">Client</th>
-                  <th className="py-3.5 px-6">Subject</th>
-                  <th className="py-3.5 px-6">Category</th>
-                  <th className="py-3.5 px-6">Priority</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6">Assigned Team</th>
-                  <th className="py-3.5 px-6">Created</th>
-                  <th className="py-3.5 px-6 text-right">Action</th>
+                <tr className="border-b border-slate-100 bg-slate-50/75 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  <th className="py-3 px-4 sm:px-6">Ticket ID</th>
+                  <th className="py-3 px-4 sm:px-6">Client</th>
+                  <th className="py-3 px-4 sm:px-6">Subject</th>
+                  <th className="py-3 px-4 sm:px-6">Category</th>
+                  <th className="py-3 px-4 sm:px-6">Priority</th>
+                  <th className="py-3 px-4 sm:px-6">Status</th>
+                  <th className="py-3 px-4 sm:px-6">Assigned Team</th>
+                  <th className="py-3 px-4 sm:px-6">Created</th>
+                  <th className="py-3 px-4 sm:px-6 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
+              <tbody className="divide-y divide-slate-100 text-sm">
                 {tickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50/75 transition-colors">
-                    <td className="py-4 px-6 font-mono text-xs font-semibold text-blue-600">
+                  <tr key={ticket.id} className="hover:bg-[#2C2772]/[0.02] transition-colors">
+                    <td className="py-3.5 px-4 sm:px-6 font-mono text-xs font-semibold text-[#2C2772]">
                       {ticket.ticket_number}
                     </td>
-                    <td className="py-4 px-6 font-medium text-gray-900 text-xs">
+                    <td className="py-3.5 px-4 sm:px-6 font-medium text-slate-900 text-xs">
                       {ticket.client?.full_name || 'Client'}
                     </td>
-                    <td className="py-4 px-6 max-w-xs truncate text-gray-900 font-medium" title={ticket.title}>
+                    <td className="py-3.5 px-4 sm:px-6 max-w-xs truncate text-slate-900 font-medium text-xs sm:text-sm" title={ticket.title}>
                       {ticket.title}
                     </td>
-                    <td className="py-4 px-6 text-xs text-gray-600">
+                    <td className="py-3.5 px-4 sm:px-6 text-xs text-slate-600">
                       {ticket.category?.name || 'General'}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3.5 px-4 sm:px-6">
                       <PriorityBadge priority={ticket.priority} />
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-3.5 px-4 sm:px-6">
                       <StatusBadge status={ticket.status} />
                     </td>
-                    <td className="py-4 px-6 text-xs text-gray-600">
+                    <td className="py-3.5 px-4 sm:px-6 text-xs text-slate-600">
                       {ticket.assignments && ticket.assignments.length > 0 ? (
                         <div className="flex items-center -space-x-1.5">
                           {ticket.assignments.map((asg) => (
                             <div
                               key={asg.id}
-                              className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white ring-2 ring-white"
+                              className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2C2772] text-[10px] font-bold text-white ring-2 ring-white"
                               title={asg.employee?.full_name || 'Support Agent'}
                             >
                               {getInitials(asg.employee?.full_name || 'TW')}
@@ -192,13 +192,13 @@ export default async function AdminTicketsPage({
                         <span className="text-amber-600 italic font-medium">Unassigned</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-xs text-gray-500 whitespace-nowrap">
+                    <td className="py-3.5 px-4 sm:px-6 text-xs text-slate-500 whitespace-nowrap">
                       {formatDate(ticket.created_at)}
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-3.5 px-4 sm:px-6 text-right">
                       <Link
                         href={`/admin/tickets/${ticket.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-[#2C2772] hover:bg-[#2C2772]/10 transition-colors"
                       >
                         <span>Manage</span>
                         <ArrowRight className="h-3 w-3" />

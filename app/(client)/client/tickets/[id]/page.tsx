@@ -54,11 +54,11 @@ export default async function ClientTicketDetailPage({
 
       {/* Resolution Confirmation Banner (Section 7) */}
       {ticket.status === 'resolved' && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-6 shadow-sm">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                <CheckCircle className="h-5 w-5 text-emerald-600" />
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm sm:text-base">
+                <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
                 <span>Our Engineering Team Marked This Ticket as Resolved</span>
               </div>
               <p className="text-xs text-emerald-700">
@@ -72,11 +72,11 @@ export default async function ClientTicketDetailPage({
 
       {/* Rating & Feedback Banner (Section 8) */}
       {ticket.status === 'closed' && (
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-6 shadow-sm">
+        <div className="rounded-2xl border border-[#2c2772]/20 bg-[#2c2772]/5 p-4 sm:p-6 shadow-sm">
           {ticket.rating ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
-                <ShieldCheck className="h-4 w-4 text-blue-600" />
+              <div className="flex items-center gap-2 text-[#2c2772] font-bold text-sm">
+                <ShieldCheck className="h-4 w-4 text-[#2c2772]" />
                 <span>Your Feedback Submitted</span>
               </div>
               <div className="flex items-center gap-1">
@@ -113,22 +113,22 @@ export default async function ClientTicketDetailPage({
       )}
 
       {/* Main Grid: Details + Live Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Left Column: Ticket Details Panel (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 space-y-5 sm:space-y-6">
           {/* Main Info Card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                <span className="font-mono text-xs font-bold text-[#2c2772] bg-[#2c2772]/10 px-2 py-0.5 rounded-md border border-[#2c2772]/20">
                   {ticket.ticket_number}
                 </span>
                 <PriorityBadge priority={ticket.priority} />
               </div>
-              <h2 className="text-lg font-bold text-gray-900 leading-snug">{ticket.title}</h2>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">{ticket.title}</h2>
             </div>
 
-            <div className="text-sm text-gray-700 whitespace-pre-wrap rounded-xl bg-gray-50 p-4 border border-gray-100">
+            <div className="text-xs sm:text-sm text-gray-700 whitespace-pre-wrap rounded-xl bg-gray-50 p-3.5 sm:p-4 border border-gray-100">
               {ticket.description}
             </div>
 
@@ -161,7 +161,7 @@ export default async function ClientTicketDetailPage({
           </div>
 
           {/* Assigned Engineers Panel (Section 6) */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-700">
               Assigned Support Engineers
             </h3>
@@ -170,19 +170,19 @@ export default async function ClientTicketDetailPage({
               <div className="space-y-3">
                 {ticket.assignments.map((asg) => (
                   <div key={asg.id} className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white shadow">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-[#2c2772] text-xs font-bold text-white shadow shrink-0">
                       {getInitials(asg.employee?.full_name || 'TW')}
                     </div>
-                    <div>
-                      <div className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-gray-900 flex items-center gap-1.5 truncate">
                         <span>{asg.employee?.full_name}</span>
                         {asg.is_primary && (
-                          <span className="px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 text-[10px] font-bold">
+                          <span className="px-1.5 py-0.2 rounded bg-[#2c2772]/15 text-[#2c2772] text-[10px] font-bold">
                             Lead
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-gray-500">
+                      <div className="text-[11px] text-gray-500 truncate">
                         {asg.employee?.email}
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export default async function ClientTicketDetailPage({
           />
 
           {/* Ticket Activity History (Section 7) */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-700">
               Status Activity Timeline
             </h3>
@@ -212,7 +212,7 @@ export default async function ClientTicketDetailPage({
             <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
               {history.map((h) => (
                 <div key={h.id} className="relative flex items-start gap-3 pl-2">
-                  <div className="h-2.5 w-2.5 rounded-full bg-blue-600 ring-4 ring-white mt-1 z-10" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-[#2c2772] ring-4 ring-white mt-1 z-10" />
                   <div className="space-y-0.5">
                     <div className="text-xs font-semibold text-gray-900">
                       Status changed to <span className="capitalize">{h.new_status}</span>

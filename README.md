@@ -210,13 +210,17 @@ Built with Next.js and Neon PostgreSQL.
 
 ## Email, verification and password recovery
 
-Application email is delivered exclusively by the Gmail API through a durable Postgres outbox. Apply [the migration](db/migrations/001_email_auth.sql) before deploying and follow [Gmail setup and operations](docs/email-setup.md) for sender authorization, server-only environment variables, scheduling, notification policies, safe retries, and tests. Copy the placeholder-only `.env.example` to your local environment without overwriting existing credentials.
+Application email is delivered through Gmail SMTP with a Google App Password and a durable Postgres outbox. Apply [the migration](db/migrations/001_email_auth.sql) before deploying and follow [Gmail setup and operations](docs/email-setup.md) for App Password configuration, server-only environment variables, scheduling, notification policies, safe retries, and tests. Copy the placeholder-only `.env.example` to your local environment without overwriting existing credentials.
 
 ```bash
+npm run db:migrate
+npm run db:check
 npm test
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-Live email delivery requires an authorized Gmail sender and an authenticated scheduler; it is not exercised by the automated tests.
+Live email delivery requires a Gmail sender with a valid App Password; production retries require an authenticated scheduler. Live delivery is not exercised by the automated tests.
+
+If email is not arriving, follow the [local Gmail quickstart](docs/email-local-quickstart.md). Real values belong in `.env.local`, not `.env.example`. Run `npm run email:check` to identify missing settings. Set `SMTP_EMAIL` and `SMTP_APP_PASSWORD`, then restart the app. New notifications process automatically after requests. Optional `npm run email:watch` in a second terminal processes retries and delayed chat reminders during development.

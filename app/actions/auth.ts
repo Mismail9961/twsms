@@ -1,9 +1,10 @@
 'use server'
 
+import { scheduleEmailDelivery } from '@/lib/email/dispatch'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { createSession, destroySession, dashboardPathForRole } from '@/lib/auth/session'
+import { createSession, destroySession, dashboardPathForRole, getSession } from '@/lib/auth/session'
 import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
 import { allowAuthRequest } from '@/lib/auth/rate-limit'
 import { issueChallenge, requestReset, consumeChallenge } from '@/lib/auth/challenges'
@@ -96,6 +97,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
     try { await issueChallenge(profile.id, 'verify') } catch { console.error('[Verification] Could not enqueue challenge') }
   }
   await createSession(profile)
+  scheduleEmailDelivery()
   redirect(isNeonConfigured() ? '/verify-email' : '/client')
 }
 
@@ -150,14 +152,24 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
     return { error: 'Invalid email or password' }
   }
 
-  if (isNeonConfigured()) {
-    try {
-      await emailQuery(`WITH changed AS (UPDATE profiles SET last_login_notice_at=now() WHERE id=$1 AND (last_login_notice_at IS NULL OR last_login_notice_at<now()-interval '30 days') RETURNING id) INSERT INTO email_outbox(event_key,kind,recipient_id) SELECT 'login:'||id||':'||CURRENT_DATE,'login',id FROM changed ON CONFLICT DO NOTHING`, [profile.id])
-    } catch { console.error('[Login notice] Could not enqueue') }
-    const [verification] = await emailQuery<{ requires_email_verification: boolean }>('SELECT requires_email_verification FROM profiles WHERE id=$1', [profile.id])
-    if (verification?.requires_email_verification) { await createSession(profile); redirect('/verify-email') }
+  let requiresVerification = false
+  try {
+    if (isNeonConfigured()) {
+      const [verification] = await emailQuery<{ requires_email_verification: boolean }>(
+        'SELECT requires_email_verification FROM profiles WHERE id=$1', [profile.id]
+      )
+      requiresVerification = verification?.requires_email_verification ?? false
+      try {
+        await emailQuery(`WITH changed AS (UPDATE profiles SET last_login_notice_at=now() WHERE id=$1 AND (last_login_notice_at IS NULL OR last_login_notice_at<now()-interval '30 days') RETURNING id) INSERT INTO email_outbox(event_key,kind,recipient_id) SELECT 'login:'||id||':'||CURRENT_DATE,'login',id FROM changed ON CONFLICT DO NOTHING`, [profile.id])
+      } catch { console.error('[Login notice] Could not enqueue') }
+    }
+    await createSession(profile)
+  } catch {
+    console.error('[Sign In] Authentication database setup or session creation failed. Check npm run db:check.')
+    return { error: 'Sign-in is temporarily unavailable. Please try again later.' }
   }
-  await createSession(profile)
+  scheduleEmailDelivery()
+  if (requiresVerification) redirect('/verify-email')
 
   const from = (formData.get('from') as string)?.trim()
   let destination = dashboardPathForRole(profile.role)
@@ -186,6 +198,7 @@ export async function forgotPassword(prevState: AuthState, formData: FormData): 
   if (!email) return { error: 'Email address is required' }
 
   try { if (await allowAuthRequest('reset-request', email)) await requestReset(email) } catch { console.error('[Password recovery] Request could not be queued') }
+  scheduleEmailDelivery()
   return { success: true }
 }
 
@@ -212,19 +225,23 @@ export async function resetPassword(prevState: AuthState, formData: FormData): P
 }
 
 export async function verifyEmail(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const email = String(formData.get('email') || '').trim().toLowerCase()
+  const session = await getSession()
+  if (!session) return { error: 'Please sign in again to verify your email.' }
+  const email = session.email.trim().toLowerCase()
   try {
     if (!await allowAuthRequest('verify-consume', email)) return { error: 'Too many attempts. Try again later.' }
     if (!await consumeChallenge(email, String(formData.get('code') || '').trim(), 'verify')) return { error: 'Code invalid, expired, or too many attempts. Request a new code.' }
     return { success: true }
   } catch { return { error: 'Verification is unavailable. Please try again.' } }
 }
-export async function resendVerification(prevState: AuthState, formData: FormData): Promise<AuthState> {
-  const email = String(formData.get('email') || '').trim().toLowerCase()
+export async function resendVerification(): Promise<AuthState> {
+  const session = await getSession()
+  if (!session) return { error: 'Please sign in again to resend your verification code.' }
+  const email = session.email.trim().toLowerCase()
   try {
     if (!await allowAuthRequest('verify-request', email)) return { success: true }
-    const rows = await emailQuery<{ id: string }>("SELECT id FROM profiles WHERE lower(email)=$1 AND requires_email_verification=true AND account_status='active'", [email])
-    if (rows[0]) await issueChallenge(rows[0].id, 'verify')
+    const rows = await emailQuery<{ id: string }>("SELECT id FROM profiles WHERE id=$1 AND requires_email_verification=true AND account_status='active'", [session.id])
+    if (rows[0]) { await issueChallenge(rows[0].id, 'verify'); scheduleEmailDelivery() }
   } catch { console.error('[Verification] Resend could not be queued') }
   return { success: true }
 }

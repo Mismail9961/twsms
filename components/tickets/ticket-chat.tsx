@@ -162,23 +162,23 @@ export function TicketChat({
   const canPostInternalNotes = userRole === 'admin' || userRole === 'employee'
 
   return (
-    <div className="flex flex-col h-[600px] rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[520px] sm:h-[600px] rounded-2xl border border-[#2C2772]/15 bg-white shadow-sm overflow-hidden">
       {/* Chat Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 bg-gray-50/50">
-        <div>
-          <h3 className="font-semibold text-gray-900 text-sm">Real-Time Ticket Conversation</h3>
-          <p className="text-xs text-gray-500">Live communication with Technology World support team</p>
+      <div className="flex items-center justify-between border-b border-[#2C2772]/10 px-3 sm:px-6 py-3 sm:py-4 bg-[#2C2772]/[0.02]">
+        <div className="min-w-0 pr-2">
+          <h3 className="font-semibold text-[#2C2772] text-xs sm:text-sm truncate">Real-Time Ticket Conversation</h3>
+          <p className="text-[11px] sm:text-xs text-slate-500 truncate">Live communication with Technology World support team</p>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+        <div className="flex shrink-0 items-center gap-1.5 text-[11px] sm:text-xs text-emerald-600 font-medium">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Live Session Active</span>
+          <span className="hidden min-[360px]:inline">Live Session Active</span>
         </div>
       </div>
 
       {/* Messages Stream */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-full text-center p-6 text-slate-400">
             <p className="text-sm">No messages exchanged yet.</p>
             <p className="text-xs mt-1">Start the conversation below.</p>
           </div>
@@ -191,18 +191,18 @@ export function TicketChat({
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 max-w-[85%] ${
+                className={`flex gap-2 sm:gap-3 max-w-[92%] sm:max-w-[85%] ${
                   isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'
                 }`}
               >
                 {/* Avatar */}
                 <div
-                  className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-sm ${
+                  className={`flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full text-[10px] sm:text-xs font-bold text-white shadow-sm ${
                     isInternal
                       ? 'bg-amber-600 ring-2 ring-amber-200'
                       : isStaff
-                      ? 'bg-blue-600'
-                      : 'bg-slate-800'
+                      ? 'bg-[#2C2772]'
+                      : 'bg-slate-700'
                   }`}
                   title={msg.sender?.full_name}
                 >
@@ -210,30 +210,30 @@ export function TicketChat({
                 </div>
 
                 {/* Message Body */}
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <div
-                    className={`flex items-center gap-2 text-[11px] ${
+                    className={`flex items-center gap-2 text-[10px] sm:text-[11px] ${
                       isMe ? 'justify-end' : 'justify-start'
                     }`}
                   >
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-slate-900 truncate max-w-[120px] sm:max-w-none">
                       {isMe ? 'You' : msg.sender?.full_name || 'Support Agent'}
                     </span>
                     {isInternal && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold border border-amber-200">
-                        <Lock className="h-2.5 w-2.5" /> Internal Staff Note
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-semibold border border-amber-200 shrink-0">
+                        <Lock className="h-2.5 w-2.5" /> Staff Note
                       </span>
                     )}
-                    <span className="text-gray-400">{formatDateTime(msg.created_at)}</span>
+                    <span className="text-slate-400 shrink-0">{formatDateTime(msg.created_at)}</span>
                   </div>
 
                   <div
-                    className={`rounded-2xl p-4 text-sm leading-relaxed shadow-sm ${
+                    className={`rounded-2xl p-3 sm:p-4 text-xs sm:text-sm leading-relaxed shadow-sm break-words ${
                       isInternal
                         ? 'bg-amber-50 text-amber-950 border border-amber-200'
                         : isMe
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        ? 'bg-[#2C2772] text-white'
+                        : 'bg-slate-100 text-slate-900'
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.message_body}</p>
@@ -249,9 +249,9 @@ export function TicketChat({
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-xs underline font-medium hover:opacity-80"
                           >
-                            <FileText className="h-3.5 w-3.5" />
-                            <span>{att.original_filename}</span>
-                            <span className="opacity-70">({formatFileSize(att.file_size)})</span>
+                            <FileText className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{att.original_filename}</span>
+                            <span className="opacity-70 shrink-0">({formatFileSize(att.file_size)})</span>
                           </a>
                         ))}
                       </div>
@@ -266,28 +266,28 @@ export function TicketChat({
       </div>
 
       {/* Input Area */}
-      <form onSubmit={handleSend} className="border-t border-gray-200 p-4 bg-gray-50/75 space-y-2">
+      <form onSubmit={handleSend} className="border-t border-[#2C2772]/10 p-2.5 sm:p-4 bg-slate-50/75 space-y-2">
         {sendError && (
           <p className="text-xs font-medium text-red-600 px-1">{sendError}</p>
         )}
 
         {canPostInternalNotes && (
           <div className="flex items-center justify-between pb-1">
-            <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
               <input
                 type="checkbox"
                 checked={isInternalNote}
                 onChange={(e) => setIsInternalNote(e.target.checked)}
-                className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
+                className="rounded border-slate-300 text-amber-600 focus:ring-amber-500 h-3.5 w-3.5"
               />
               <span className={isInternalNote ? 'text-amber-700 font-semibold' : ''}>
-                🔒 Post as Internal Note (Staff Only — hidden from client)
+                🔒 Post as Internal Note (Staff Only)
               </span>
             </label>
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <input
             type="text"
             value={inputText}
@@ -295,23 +295,23 @@ export function TicketChat({
             disabled={isSending}
             placeholder={
               isInternalNote
-                ? 'Type internal note visible only to employees and admins...'
-                : 'Type your message or technical question...'
+                ? 'Internal note for staff...'
+                : 'Type your message...'
             }
-            className={`flex-1 rounded-xl border px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 transition-all ${
+            className={`flex-1 min-w-0 rounded-xl border px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-sm text-slate-900 focus:outline-none focus:ring-2 transition-all ${
               isInternalNote
                 ? 'border-amber-300 bg-amber-50/50 focus:ring-amber-500'
-                : 'border-gray-200 bg-white focus:ring-blue-500'
+                : 'border-slate-200 bg-white focus:border-[#2C2772] focus:ring-[#2C2772]/20'
             }`}
           />
 
           <button
             type="submit"
             disabled={!inputText.trim() || isSending}
-            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
               isInternalNote
                 ? 'bg-amber-600 hover:bg-amber-700'
-                : 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-[#2C2772] hover:bg-[#231f5c]'
             }`}
           >
             {isSending ? (

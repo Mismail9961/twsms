@@ -159,13 +159,13 @@ export function SharedDocuments({
             Share files securely with everyone on this ticket.
           </p>
         </div>
-        <Paperclip className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+        <Paperclip className="h-4 w-4 shrink-0 text-[#2C2772]" aria-hidden="true" />
       </div>
 
-      <form onSubmit={handleUpload} className="space-y-3 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 p-3">
+      <form onSubmit={handleUpload} className="space-y-3 rounded-xl border border-dashed border-[#2C2772]/25 bg-[#2C2772]/[0.03] p-3">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:border-blue-300">
-            <Upload className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+          <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:border-[#2C2772]">
+            <Upload className="h-4 w-4 shrink-0 text-[#2C2772]" aria-hidden="true" />
             <span className="truncate">
               {selectedFiles.length > 0
                 ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} selected`
@@ -183,7 +183,7 @@ export function SharedDocuments({
           <button
             type="submit"
             disabled={selectedFiles.length === 0 || isUploading}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-[#2C2772] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#231f5c] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -194,11 +194,11 @@ export function SharedDocuments({
           </button>
         </div>
         {selectedFiles.length > 0 && (
-          <p className="break-all text-xs text-gray-600">
+          <p className="break-all text-xs text-slate-600">
             {selectedFiles.map((file) => file.name).join(', ')}
           </p>
         )}
-        <p className="text-[11px] text-gray-500">Each file can be up to 4 MB.</p>
+        <p className="text-[11px] text-slate-500">Each file can be up to 4 MB.</p>
         {error && (
           <p role="alert" className="flex items-center gap-1.5 text-xs font-medium text-red-700">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -206,17 +206,17 @@ export function SharedDocuments({
           </p>
         )}
         {uploadStatus && (
-          <p role="status" aria-live="polite" className="text-xs font-medium text-blue-700">
+          <p role="status" aria-live="polite" className="text-xs font-medium text-[#2C2772]">
             {uploadStatus}
           </p>
         )}
       </form>
 
       {attachments.length === 0 ? (
-        <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-5 text-center">
-          <FileText className="mx-auto h-5 w-5 text-gray-400" aria-hidden="true" />
-          <p className="mt-2 text-xs text-gray-500">No files shared yet.</p>
-          <p className="mt-0.5 text-[11px] text-gray-400">
+        <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-5 text-center">
+          <FileText className="mx-auto h-5 w-5 text-slate-400" aria-hidden="true" />
+          <p className="mt-2 text-xs text-slate-500">No files shared yet.</p>
+          <p className="mt-0.5 text-[11px] text-slate-400">
             Choose a document or file above to share it with this ticket.
           </p>
         </div>
@@ -224,13 +224,13 @@ export function SharedDocuments({
         <ul className="space-y-2">
           {attachments.map((attachment) => (
             <li key={attachment.id}>
-              <div className="flex items-center gap-2 rounded-xl border border-gray-200 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/50">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 transition-colors hover:border-[#2C2772]/30 hover:bg-[#2C2772]/[0.03]">
                 <a
                   href={`/api/attachments/${attachment.id}`}
                   className="flex min-w-0 flex-1 items-center justify-between gap-3"
                 >
                   <span className="flex min-w-0 items-center gap-2.5">
-                    <FileText className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+                    <FileText className="h-4 w-4 shrink-0 text-[#2C2772]" aria-hidden="true" />
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-semibold text-gray-900">
                         {attachment.original_filename}

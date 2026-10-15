@@ -1,7 +1,8 @@
+import { emailConfigurationIssues } from './config.mjs'
 import { emailQuery } from './store'
 import { template } from './templates'
-import { appLink, unseal, validEmail, digest } from './security'
-import { DeliveryError, retryDelay, sendGmail } from './gmail'
+import { appLink, unseal, validEmail, challengeDigest } from './security'
+import { DeliveryError, retryDelay, sendEmail } from './smtp'
 
 type Job = { id: string; kind: string; recipient_id: string; ticket_id: string | null; payload: { secret?: string }; attempts: number; created_at: string }
 type User = { id: string; email: string; full_name: string; role: string; created_at: string }
@@ -10,6 +11,7 @@ async function render(job: Job) {
   if (!user || !validEmail(user.email)) return null
   let to = user.email, kind = job.kind
   let through: string | undefined
+  let verification: { code: string; expiresAt: string } | undefined
   let details = `Account: ${user.full_name} (${user.email})\nDate: ${new Date(job.created_at).toISOString()}\n`
   let path = `/${user.role}`
   if (kind === 'registration' || kind === 'ticket') { to = process.env.ADMIN_NOTIFICATION_EMAIL || ''; path = '/admin' }
@@ -21,8 +23,8 @@ async function render(job: Job) {
     if (!challenge || !job.payload.secret) return null
     const secret = unseal(job.payload.secret)
     const expires = new Date(challenge.expires_at).toISOString()
-    if (digest(secret) !== challenge.digest) return null
-    if (kind === 'verify') { details += `Your verification code is: ${secret}\nExpires at ${expires} (UTC). Enter it on the verification page.`; path = '/verify-email' }
+    if (challengeDigest(secret, kind, user.email) !== challenge.digest) return null
+    if (kind === 'verify') { verification = { code: secret, expiresAt: expires }; details += `Your verification code is: ${secret}\nExpires at ${expires} (UTC). Enter it on the verification page.`; path = '/verify-email' }
     else { details += `Choose a new password using this single-use link. Expires at ${expires} (UTC).`; path = `/reset-password#email=${encodeURIComponent(user.email)}&token=${secret}` }
   }
   if (job.ticket_id) {
@@ -56,12 +58,13 @@ async function render(job: Job) {
     } else details += ticket.description
   }
   if (!validEmail(to)) throw new DeliveryError('invalid_recipient')
-  return { to, through, mail: template(kind, user.full_name, details, appLink(path)) }
+  return { to, through, mail: template(kind, user.full_name, details, appLink(path), verification) }
 }
 export async function runEmailWorker() {
+  if (emailConfigurationIssues().length) throw new DeliveryError('email_configuration')
   const lease = await emailQuery(`UPDATE email_worker_lock SET until_at=now()+interval '5 minutes' WHERE id=1 AND until_at<now() RETURNING id`)
   if (!lease.length) return { processed: 0 }
-  // A terminated process may already have submitted to Gmail: require operator reconciliation, never blindly resend.
+  // A terminated process may already have submitted to SMTP: require operator reconciliation, never blindly resend.
   await emailQuery("UPDATE email_outbox SET status='uncertain',last_error='worker_interrupted' WHERE status='sending' AND locked_at<now()-interval '2 minutes'")
   let processed = 0
   const started = Date.now()
@@ -83,16 +86,16 @@ export async function runEmailWorker() {
     AND NOT EXISTS (SELECT 1 FROM email_outbox e WHERE e.kind='chat' AND e.ticket_id=r.ticket_id AND e.recipient_id=r.recipient_id AND (e.status IN ('pending','sending','uncertain') OR e.chat_through_at>=r.latest))
     ON CONFLICT DO NOTHING`)
     while (processed < 10 && Date.now() - started < 18000) {
-      const [job] = await emailQuery<Job>(`UPDATE email_outbox SET status='sending',locked_at=now(),attempts=attempts+1 WHERE id=(SELECT id FROM email_outbox WHERE status='pending' AND available_at<=now() ORDER BY available_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`)
+      const [job] = await emailQuery<Job>(`UPDATE email_outbox SET status='sending',locked_at=now(),attempts=attempts+1 WHERE id=(SELECT id FROM email_outbox WHERE status='pending' AND available_at<=now() ORDER BY CASE WHEN kind IN ('verify','reset') THEN 0 ELSE 1 END,available_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *`)
       if (!job) break
       let submitted = false
       try {
         const message = await render(job)
         if (!message) await emailQuery("UPDATE email_outbox SET status='cancelled',payload='{}' WHERE id=$1", [job.id])
         else {
-          const gmailId = await sendGmail(message.to, message.mail, job.id)
+          const messageId = await sendEmail(message.to, message.mail, job.id)
           submitted = true
-          await emailQuery("UPDATE email_outbox SET status='sent',sent_at=now(),gmail_id=$2,chat_through_at=$3,payload='{}',last_error=NULL WHERE id=$1", [job.id, gmailId, message.through || null])
+          await emailQuery("UPDATE email_outbox SET status='sent',sent_at=now(),gmail_id=$2,chat_through_at=$3,payload='{}',last_error=NULL WHERE id=$1", [job.id, messageId, message.through || null])
         }
       } catch (error) {
         const failure = submitted ? new DeliveryError('delivery_record_unknown', false, true) : error instanceof DeliveryError ? error : new DeliveryError('processing_failed')

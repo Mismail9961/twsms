@@ -1,3 +1,4 @@
+import { scheduleEmailDelivery } from '@/lib/email/dispatch'
 import { randomBytes, randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
@@ -176,6 +177,7 @@ export async function GET(request: NextRequest) {
       await emailQuery('UPDATE profiles SET email_verified_at=now(),requires_email_verification=false WHERE id=$1', [profile.id])
       try { await emailQuery(`WITH changed AS (UPDATE profiles SET last_login_notice_at=now() WHERE id=$1 AND (last_login_notice_at IS NULL OR last_login_notice_at<now()-interval '30 days') RETURNING id) INSERT INTO email_outbox(event_key,kind,recipient_id) SELECT 'login:'||id||':'||CURRENT_DATE,'login',id FROM changed ON CONFLICT DO NOTHING`, [profile.id]) } catch { console.error('[Login notice] Could not enqueue') }
     }
+    scheduleEmailDelivery()
     const token = await encodeSessionToken(profile)
     const destination = dashboardPathForRole(profile.role)
     const success = applySessionCookie(

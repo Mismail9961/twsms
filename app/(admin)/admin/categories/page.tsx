@@ -15,14 +15,14 @@ export default async function AdminCategoriesPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
         {categories.map((c) => (
           <div
             key={c.id}
-            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3"
+            className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm space-y-3"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-blue-600">
+              <div className="flex items-center gap-2 text-[#2c2772]">
                 <Tag className="h-4 w-4" />
                 <span className="text-xs font-bold uppercase tracking-wider">Active Domain</span>
               </div>

@@ -1,5 +1,6 @@
 'use server'
 
+import { scheduleEmailDelivery } from '@/lib/email/dispatch'
 import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -203,6 +204,7 @@ export async function createTicket(
     }
   }
 
+  scheduleEmailDelivery()
   revalidatePath('/client')
   revalidatePath('/client/tickets')
   revalidatePath('/admin')
@@ -355,6 +357,7 @@ export async function assignEmployee(
   }
 
   revalidatePath(`/admin/tickets/${ticketId}`)
+  scheduleEmailDelivery()
   revalidatePath('/employee')
 }
 
@@ -437,6 +440,7 @@ export async function sendMessage(
   revalidatePath(`/client/tickets/${ticketId}`)
   revalidatePath(`/admin/tickets/${ticketId}`)
   revalidatePath(`/employee/tickets/${ticketId}`)
+  scheduleEmailDelivery()
   return saved
 }
 
@@ -581,6 +585,7 @@ export async function createEmployeeAccount(formData: FormData) {
     memoryDb.passwords[email] = passwordHash
   }
 
+  scheduleEmailDelivery()
   revalidatePath('/admin/employees')
 }
 

@@ -57,19 +57,19 @@ export function getInitials(name: string): string {
 }
 
 export const PRIORITY_COLORS = {
-  low: 'bg-blue-100 text-blue-700 border-blue-200',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  critical: 'bg-red-100 text-red-700 border-red-200',
+  low: 'bg-[#2c2772]/10 text-[#2c2772] border-[#2c2772]/20',
+  medium: 'bg-amber-100 text-amber-800 border-amber-200',
+  high: 'bg-orange-100 text-orange-800 border-orange-200',
+  critical: 'bg-red-100 text-red-800 border-red-200',
 } as const
 
 export const STATUS_COLORS = {
-  open: 'bg-blue-100 text-blue-700 border-blue-200',
-  assigned: 'bg-purple-100 text-purple-700 border-purple-200',
-  in_progress: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  waiting_for_client: 'bg-orange-100 text-orange-700 border-orange-200',
-  waiting_for_support: 'bg-pink-100 text-pink-700 border-pink-200',
-  resolved: 'bg-green-100 text-green-700 border-green-200',
+  open: 'bg-[#2c2772]/10 text-[#2c2772] border-[#2c2772]/20',
+  assigned: 'bg-[#2c2772]/15 text-[#2c2772] border-[#2c2772]/30',
+  in_progress: 'bg-amber-100 text-amber-800 border-amber-200',
+  waiting_for_client: 'bg-orange-100 text-orange-800 border-orange-200',
+  waiting_for_support: 'bg-pink-100 text-pink-800 border-pink-200',
+  resolved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   closed: 'bg-gray-100 text-gray-700 border-gray-200',
 } as const
 

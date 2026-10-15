@@ -43,28 +43,28 @@ export default async function AdminRatingsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
-            <Star className="h-7 w-7 fill-amber-400" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm flex items-center gap-4">
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-500 shrink-0">
+            <Star className="h-6 w-6 sm:h-7 sm:w-7 fill-amber-400" />
           </div>
           <div>
-            <div className="text-3xl font-extrabold text-gray-900">{avg}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">{avg}</div>
             <div className="text-xs text-gray-500 font-medium">Average Rating (Out of 5.0)</div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-            <MessageSquare className="h-7 w-7" />
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm flex items-center gap-4">
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-[#2c2772]/10 text-[#2c2772] shrink-0">
+            <MessageSquare className="h-6 w-6 sm:h-7 sm:w-7" />
           </div>
           <div>
-            <div className="text-3xl font-extrabold text-gray-900">{total}</div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-gray-900">{total}</div>
             <div className="text-xs text-gray-500 font-medium">Total Reviews Submitted</div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm flex flex-col justify-center space-y-1.5">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm flex flex-col justify-center space-y-1.5">
           <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
             Star Distribution
           </div>
@@ -85,30 +85,30 @@ export default async function AdminRatingsPage() {
 
       {/* Ratings Table */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto -mx-1 px-1 sm:mx-0 sm:px-0">
+          <table className="w-full min-w-[640px] text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/75 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                <th className="py-3.5 px-6">Ticket</th>
-                <th className="py-3.5 px-6">Client</th>
-                <th className="py-3.5 px-6">Rating</th>
-                <th className="py-3.5 px-6">Resolution Method</th>
-                <th className="py-3.5 px-6">Feedback Comments</th>
-                <th className="py-3.5 px-6 text-right">Date</th>
+                <th className="py-3.5 px-3 sm:px-6">Ticket</th>
+                <th className="py-3.5 px-3 sm:px-6">Client</th>
+                <th className="py-3.5 px-3 sm:px-6">Rating</th>
+                <th className="py-3.5 px-3 sm:px-6">Resolution Method</th>
+                <th className="py-3.5 px-3 sm:px-6">Feedback Comments</th>
+                <th className="py-3.5 px-3 sm:px-6 text-right">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
               {ratings.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50/75 transition-colors">
-                  <td className="py-4 px-6 font-mono text-xs font-semibold text-blue-600">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6 font-mono text-xs font-semibold text-[#2c2772]">
                     <Link href={`/admin/tickets/${r.ticket_id}`} className="hover:underline">
                       {r.ticket?.ticket_number || 'Ticket'}
                     </Link>
                   </td>
-                  <td className="py-4 px-6 text-xs font-medium text-gray-900">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6 text-xs font-medium text-gray-900">
                     {r.client?.full_name || 'Client'}
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6">
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
@@ -122,15 +122,15 @@ export default async function AdminRatingsPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="py-4 px-6 text-xs text-gray-600">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6 text-xs text-gray-600">
                     {r.resolution_method
                       ? TICKET_RESOLUTION_METHOD_LABELS[r.resolution_method] || r.resolution_method
                       : <span className="text-gray-400 italic">Not provided</span>}
                   </td>
-                  <td className="py-4 px-6 text-xs text-gray-600 max-w-md">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6 text-xs text-gray-600 max-w-md">
                     {r.feedback ? `"${r.feedback}"` : <span className="text-gray-400 italic">No written comment</span>}
                   </td>
-                  <td className="py-4 px-6 text-xs text-gray-400 text-right whitespace-nowrap">
+                  <td className="py-3 sm:py-4 px-3 sm:px-6 text-xs text-gray-400 text-right whitespace-nowrap">
                     {formatDate(r.created_at)}
                   </td>
                 </tr>

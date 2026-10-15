@@ -10,7 +10,7 @@ import { formatDate, getInitials } from '@/lib/utils'
 type Ticket = Awaited<ReturnType<typeof getClientTickets>>[number]
 
 const focusRing =
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F4FD8]/50 focus-visible:ring-offset-2'
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2c2772]/50 focus-visible:ring-offset-2'
 
 function Assignees({ assignments }: { assignments: Ticket['assignments'] }) {
   if (!assignments || assignments.length === 0) {
@@ -25,7 +25,7 @@ function Assignees({ assignments }: { assignments: Ticket['assignments'] }) {
       {visible.map((asg) => (
         <div
           key={asg.id}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F1B2D] text-[10px] font-semibold text-white ring-2 ring-white"
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2c2772] text-[10px] font-semibold text-white ring-2 ring-white"
           title={asg.employee?.full_name || 'Support agent'}
         >
           {getInitials(asg.employee?.full_name || 'TW')}
@@ -52,12 +52,12 @@ function Stat({
   className?: string
 }) {
   return (
-    <div className={`bg-white px-4 py-4 sm:px-5 sm:py-5 ${className}`}>
+    <div className={`bg-white px-3.5 py-3.5 sm:px-5 sm:py-5 ${className}`}>
       <div className="flex items-center gap-2">
         <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
-        <span className="text-[13px] leading-tight text-slate-500">{label}</span>
+        <span className="text-xs sm:text-[13px] leading-tight text-slate-500">{label}</span>
       </div>
-      <p className="mt-2.5 text-[26px] font-semibold leading-none tracking-tight text-slate-900 tabular-nums sm:text-3xl">
+      <p className="mt-2 text-2xl font-semibold leading-none tracking-tight text-slate-900 tabular-nums sm:text-3xl">
         {value}
       </p>
     </div>
@@ -78,9 +78,9 @@ export default async function ClientDashboardPage() {
   const resolved = stats.resolved + stats.closed
 
   return (
-    <div className="space-y-5 sm:space-y-7">
+    <div className="space-y-4 sm:space-y-7">
       {/* Welcome banner */}
-      <section className="relative overflow-hidden rounded-2xl bg-[#0F1B2D] text-white shadow-[0_10px_30px_-12px_rgba(15,27,45,0.5)]">
+      <section className="relative overflow-hidden rounded-2xl bg-[#2c2772] text-white shadow-[0_10px_30px_-12px_rgba(44,39,114,0.4)]">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
@@ -91,23 +91,23 @@ export default async function ClientDashboardPage() {
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#1F4FD8]/30 blur-3xl"
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl"
           aria-hidden="true"
         />
 
-        <div className="relative z-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-7 lg:p-8">
+        <div className="relative z-10 flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-7 lg:p-8">
           <div className="min-w-0">
-            <h1 className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl lg:text-3xl">
+            <h1 className="break-words text-lg font-semibold leading-snug tracking-tight sm:text-2xl lg:text-3xl">
               Welcome back, {session.full_name}
             </h1>
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+            <p className="mt-1 text-xs sm:text-sm leading-relaxed text-purple-200">
               Technology World client support portal
             </p>
           </div>
 
           <Link
             href="/client/tickets/new"
-            className={`inline-flex min-h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-[#0F1B2D] shadow-sm transition-colors hover:bg-slate-100 active:bg-slate-200 sm:w-auto ${focusRing} focus-visible:ring-offset-[#0F1B2D]`}
+            className={`inline-flex min-h-[44px] sm:min-h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 text-xs sm:text-sm font-semibold text-[#2c2772] shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100 sm:w-auto ${focusRing} focus-visible:ring-offset-[#2c2772]`}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             <span>Create new ticket</span>
@@ -118,8 +118,8 @@ export default async function ClientDashboardPage() {
       {/* Metrics */}
       <section aria-label="Ticket summary">
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-5">
-          <Stat label="Total tickets" value={stats.total} dot="bg-[#0F1B2D]" className="col-span-2 sm:col-span-1" />
-          <Stat label="Open" value={stats.open} dot="bg-sky-500" />
+          <Stat label="Total tickets" value={stats.total} dot="bg-[#2c2772]" className="col-span-2 sm:col-span-1" />
+          <Stat label="Open" value={stats.open} dot="bg-[#2c2772]" />
           <Stat label="In progress" value={stats.in_progress} dot="bg-amber-500" />
           <Stat label="Waiting response" value={waiting} dot="bg-orange-500" />
           <Stat label="Resolved" value={resolved} dot="bg-emerald-500" />
@@ -128,14 +128,14 @@ export default async function ClientDashboardPage() {
 
       {/* Recent tickets */}
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-slate-200 px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-slate-200 px-3.5 py-3.5 sm:px-6 sm:py-4">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold tracking-tight text-slate-900">Recent support requests</h2>
-            <p className="mt-0.5 text-[13px] text-slate-500">Track the technical issues you have submitted</p>
+            <h2 className="text-sm sm:text-base font-semibold tracking-tight text-slate-900">Recent support requests</h2>
+            <p className="mt-0.5 text-xs sm:text-[13px] text-slate-500">Track the technical issues you have submitted</p>
           </div>
           <Link
             href="/client/tickets"
-            className={`inline-flex min-h-[36px] items-center gap-1 rounded-md text-[13px] font-semibold text-[#1F4FD8] transition-colors hover:text-[#183CA8] ${focusRing}`}
+            className={`inline-flex min-h-[36px] items-center gap-1 rounded-md text-xs sm:text-[13px] font-semibold text-[#2c2772] transition-colors hover:text-[#2c2772]/80 ${focusRing}`}
           >
             <span>View all tickets</span>
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

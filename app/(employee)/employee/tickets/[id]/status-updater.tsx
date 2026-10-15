@@ -39,7 +39,7 @@ export function EmployeeStatusUpdater({
           value={status}
           onChange={(e) => setStatus(e.target.value as TicketStatus)}
           disabled={isUpdating}
-          className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-base sm:text-xs font-semibold text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#2c2772] focus:border-[#2c2772]"
         >
           <option value="in_progress">In Progress</option>
           <option value="waiting_for_client">Waiting for Client</option>
@@ -50,7 +50,7 @@ export function EmployeeStatusUpdater({
         <button
           type="submit"
           disabled={isUpdating || status === currentStatus}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#2c2772] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#2c2772]/90 disabled:opacity-50 transition-colors w-full sm:w-auto"
         >
           {isUpdating ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -66,7 +66,7 @@ export function EmployeeStatusUpdater({
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Optional status transition note..."
-        className="w-full rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base sm:text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#2c2772] focus:border-[#2c2772]"
       />
 
       {success && (

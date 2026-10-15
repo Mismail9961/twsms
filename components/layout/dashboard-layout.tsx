@@ -20,8 +20,8 @@ export function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar for Desktop & Mobile Overlay */}
+    <div className="flex min-h-screen min-h-dvh w-full overflow-x-hidden bg-white selection:bg-[#2C2772] selection:text-white">
+      {/* Sidebar for desktop and mobile overlay */}
       <Sidebar
         user={user}
         unreadNotifications={unreadNotifications}
@@ -29,8 +29,8 @@ export function DashboardLayout({
         onClose={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col min-w-0 lg:pl-64">
+      {/* Main content area */}
+      <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
         <Topbar
           title={title}
           user={user}
@@ -38,7 +38,7 @@ export function DashboardLayout({
           onMobileMenuToggle={() => setMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-2.5 py-3 min-[360px]:p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

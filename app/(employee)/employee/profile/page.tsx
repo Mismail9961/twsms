@@ -16,15 +16,15 @@ export default async function EmployeeProfilePage() {
         </p>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-8 shadow-sm space-y-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-900 text-xl font-bold text-white shadow-md">
+          <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#2c2772] text-lg sm:text-xl font-bold text-white shadow-md shrink-0">
             {getInitials(session.full_name)}
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">{session.full_name}</h3>
-            <p className="text-xs text-gray-500">{session.email}</p>
-            <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wide">
+          <div className="min-w-0">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">{session.full_name}</h3>
+            <p className="text-xs text-gray-500 truncate">{session.email}</p>
+            <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#2c2772]/10 text-[#2c2772] border border-[#2c2772]/20 uppercase tracking-wide">
               Support Staff Member
             </span>
           </div>
@@ -39,7 +39,7 @@ export default async function EmployeeProfilePage() {
               type="text"
               readOnly
               value={session.full_name}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700 font-medium"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-base sm:text-sm text-gray-700 font-medium"
             />
           </div>
 
@@ -51,12 +51,12 @@ export default async function EmployeeProfilePage() {
               type="email"
               readOnly
               value={session.email}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-700 font-medium"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-base sm:text-sm text-gray-700 font-medium"
             />
           </div>
         </div>
 
-        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-xs text-blue-900">
+        <div className="rounded-xl border border-[#2c2772]/20 bg-[#2c2772]/5 p-3.5 sm:p-4 text-xs text-[#2c2772]">
           <strong>Security notice:</strong> You have authorization to access ticket threads and attachments only for incidents explicitly assigned to you by an administrator.
         </div>
       </div>

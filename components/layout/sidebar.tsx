@@ -78,7 +78,7 @@ function getRoleLabel(role: string): string {
 
 function TechWorldLogo() {
   return (
-    <div className="flex h-12 w-full max-w-[11rem] items-center justify-center rounded-xl bg-white px-4 py-2 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] ring-1 ring-white/30">
+    <div className="flex h-12 w-full max-w-[11rem] items-center justify-center rounded-xl bg-white px-4 py-2 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.5)] ring-1 ring-white/30">
       <Image
         src="/logo.png"
         alt="Technology World"
@@ -92,7 +92,7 @@ function TechWorldLogo() {
 }
 
 const focusRing =
-  'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B2D]'
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#2C2772]'
 
 interface SidebarContentProps extends SidebarProps {
   mobile?: boolean
@@ -111,18 +111,18 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
       .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[#0F1B2D]">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#2C2772]">
       {/* Soft light, matches the sign-in panel */}
       <div
-        className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[#1F4FD8]/25 blur-3xl"
+        className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[#6A63D9]/30 blur-3xl"
         aria-hidden="true"
       />
 
       {/* Branding */}
-      <div className="relative flex items-start justify-between gap-3 border-b border-white/10 px-4 pb-4 pt-5">
+      <div className="relative flex items-start justify-between gap-3 border-b border-white/15 px-4 pb-4 pt-5">
         <div className="min-w-0 flex-1">
           <TechWorldLogo />
-          <p className="mt-2.5 truncate text-xs text-slate-400">Support system</p>
+          <p className="mt-2.5 truncate text-xs text-white/70">Support system</p>
         </div>
 
         {mobile && (
@@ -130,7 +130,7 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className={`-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${focusRing}`}
+            className={`-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white/80 transition-colors hover:bg-white/10 hover:text-white ${focusRing}`}
             aria-label="Close menu"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -154,12 +154,12 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
               className={cn(
                 'group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150',
                 focusRing,
-                active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                active ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
               )}
             >
               {active && (
                 <span
-                  className="absolute -left-3 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-sky-400"
+                  className="absolute -left-3 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-white"
                   aria-hidden="true"
                 />
               )}
@@ -167,7 +167,7 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
                 size={18}
                 className={cn(
                   'shrink-0 transition-colors',
-                  active ? 'text-sky-300' : 'text-slate-400 group-hover:text-slate-200'
+                  active ? 'text-white' : 'text-white/60 group-hover:text-white'
                 )}
                 aria-hidden="true"
               />
@@ -186,7 +186,7 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
       </nav>
 
       {/* Account */}
-      <div className="relative border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="relative border-t border-white/15 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
           {user.avatar_url ? (
             <Image
@@ -195,25 +195,25 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
               width={40}
               height={40}
               unoptimized
-              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/15"
+              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/30"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1F4FD8] ring-2 ring-white/15">
-              <span className="text-xs font-semibold text-white">{getInitials(user.full_name)}</span>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white ring-2 ring-white/30">
+              <span className="text-xs font-semibold text-[#2C2772]">{getInitials(user.full_name)}</span>
             </div>
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium leading-tight text-white">{user.full_name}</p>
-            <p className="mt-0.5 truncate text-xs text-slate-400">{getRoleLabel(user.role)}</p>
+            <p className="mt-0.5 truncate text-xs text-white/70">{getRoleLabel(user.role)}</p>
           </div>
         </div>
 
         <form action={signOut} className="mt-3">
           <button
             type="submit"
-            className={`group flex min-h-[44px] w-full items-center gap-2.5 rounded-lg border border-white/10 px-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white ${focusRing}`}
+            className={`group flex min-h-[44px] w-full items-center gap-2.5 rounded-lg border border-white/20 px-3 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white ${focusRing}`}
           >
-            <LogOut size={16} className="shrink-0 text-slate-400 transition-colors group-hover:text-white" aria-hidden="true" />
+            <LogOut size={16} className="shrink-0 text-white/60 transition-colors group-hover:text-white" aria-hidden="true" />
             <span>Sign out</span>
           </button>
         </form>
@@ -264,7 +264,7 @@ export function Sidebar({ user, unreadNotifications = 0, isOpen = false, onClose
       >
         <div
           className={cn(
-            'absolute inset-0 bg-[#0F1B2D]/60 backdrop-blur-[2px] transition-opacity duration-300 motion-reduce:transition-none',
+            'absolute inset-0 bg-[#2C2772]/60 backdrop-blur-[2px] transition-opacity duration-300 motion-reduce:transition-none',
             isOpen ? 'opacity-100' : 'opacity-0'
           )}
           aria-hidden="true"

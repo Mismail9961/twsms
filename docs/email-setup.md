@@ -1,85 +1,53 @@
-# Gmail delivery and authentication
+# Email setup: Gmail SMTP
 
-## Deployment order
+All client, employee and administrator emails use **Gmail SMTP with a Google App Password**. Email delivery does not use OAuth, refresh tokens, Google Cloud API configuration, or redirect URIs. Google sign-in remains a separate, optional authentication feature using `GOOGLE_*` variables.
 
-1. Back up Postgres. For a new database, apply `db/schema.sql`. Apply `db/migrations/001_email_auth.sql` to both new and existing databases **before deploying this application**. Use the Neon SQL editor or `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/001_email_auth.sql`. The migration is repeatable and adds indexes; it does not send historical notifications. Plan the brief table locks during deployment.
-2. Set the server-only variables from `.env.example` in the host's secret store. Do not prefix secrets with `NEXT_PUBLIC_`. Generate `EMAIL_ENCRYPTION_KEY` with `openssl rand -base64 32` and `EMAIL_WORKER_SECRET` with `openssl rand -hex 32`. Keep the encryption key stable while pending challenge jobs exist. Set a strong, stable `SESSION_SECRET` using the existing session configuration.
-3. Configure `APP_BASE_URL` to the canonical HTTPS production origin. Email links never use the request Host header. Local development permits `http://localhost:3000`.
-4. Schedule an authenticated **POST** to `/api/internal/email` every minute with `Authorization: Bearer <EMAIL_WORKER_SECRET>`. Use an external scheduler able to set headers and POST; a deployment alone does not schedule this route. Allow a 60-second request duration. Do not expose the secret in URL parameters. One database lease serializes workers, and each invocation handles up to ten jobs with a 250ms gap. Monitor queue age and provision capacity before increasing throughput.
-5. Test against a staging database and dedicated sender, then authorize production. Inspect `/admin/email` (also linked in the sidebar) for failures. Do not deploy without the migration, Gmail authorization, and scheduler.
+## Setup
 
-Production requires Postgres. When a configured database fails, writes fail rather than silently entering the demo memory database. Development without `DATABASE_URL` retains the existing demo experience, but **durable emails and recovery are unavailable in memory mode**. Recovery still returns the same generic response. Tests use their own isolated Postgres engine and never load `.env.local`.
+1. Enable **2-Step Verification** on the sender's Google account.
+2. Open [Google App Passwords](https://myaccount.google.com/apppasswords) and create an App Password for this app. If Google does not offer App Passwords, check account eligibility or administrator policy; a regular Google password will not work. See [Google's App Password instructions](https://support.google.com/accounts/answer/185833).
+3. Save the following in the ignored `.env.local` file, not `.env.example`:
 
-## Authorize the dedicated Gmail sender
+   ```env
+   SMTP_EMAIL=your-sender@gmail.com
+   SMTP_APP_PASSWORD=your-16-character-app-password
+   ADMIN_NOTIFICATION_EMAIL=your-admin@example.com
+   APP_BASE_URL=http://localhost:3000
+   ```
 
-Sending and Google sign-in are independent integrations. Use a separate Gmail OAuth client with `GMAIL_*` credentials; the existing `GOOGLE_*` client continues to handle sign-in.
+   Keep existing `DATABASE_URL`, `SESSION_SECRET`, `EMAIL_ENCRYPTION_KEY`, and `EMAIL_WORKER_SECRET`. The encryption key must be a base64-encoded 32-byte random key. Neither these secrets nor the App Password should be shared in chat, committed, or prefixed with `NEXT_PUBLIC_`. Spaces in the displayed App Password are removed by the sender.
+4. Run `npm run email:check`, restart the application, and click **Resend verification code** if needed. Codes requested before configuration was complete or expired codes must be reissued.
 
-1. In Google Cloud Console, create/select the sender's project and enable **Gmail API**.
-2. Configure Google Auth Platform branding, audience/consent, support contacts, authorized domains, and data access. For a Workspace-only deployment, choose Internal when eligible. For External production use, complete Google's applicable verification requirements. Testing mode refresh tokens for Gmail scopes generally expire after seven days; do not leave a production sender in Testing.
-3. Create an OAuth 2.0 Web application client. Add the exact HTTPS redirect URI used by your secure, operator-only authorization tool. The application does **not** provide a public sender-authorization endpoint.
-4. Authorize the dedicated mailbox using Google's web-server OAuth authorization-code flow with `scope=https://www.googleapis.com/auth/gmail.send`, `access_type=offline`, and, when necessary to obtain a new refresh token, `prompt=consent`. Use and verify OAuth `state`. Exchange the code at `https://oauth2.googleapis.com/token` using the same redirect URI. Store the resulting refresh token only in `GMAIL_REFRESH_TOKEN`. Never paste tokens into issue trackers, source files, browser application code, or logs. A vetted local operator tool or OAuth Playground with your own client may be used for setup; remove any temporary redirect URI afterward.
-5. Set `GMAIL_SENDER_EMAIL` to the authorized mailbox's primary address or an already verified Gmail “Send mail as” alias. Confirm the alias in the mailbox's Gmail settings. A client ID does not prove ownership of a sender address.
-6. Set `ADMIN_NOTIFICATION_EMAIL` to your trusted support administrator mailbox. All other recipients are resolved from active database profiles, ownership, and assignments. No frontend recipient address controls support notifications.
+SMTP uses `smtp.gmail.com`, port **465**, with TLS and certificate verification enabled. The From address and envelope sender are always `SMTP_EMAIL`. Nodemailer sends the multipart MIME message; no OAuth grant is required. [SMTP transport documentation](https://nodemailer.com/smtp).
 
-This implementation uses Google's documented OAuth HTTPS token endpoint and Gmail REST `users.messages.send`, exclusively. It builds base64url MIME multipart messages with HTML and plain text. No SMTP fallback or third-party delivery provider is present. Service-account impersonation is not implemented; use the supported mailbox OAuth setup above.
+## Automatic delivery and retries
 
-Official references: [send mail](https://developers.google.com/workspace/gmail/api/guides/sending), [messages.send](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send), [web-server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server), [refresh-token expiration](https://developers.google.com/identity/protocols/oauth2).
+Successful signup, login notifications, password recovery, verification resend, ticket creation/assignment, employee creation and chat messages schedule a queue-processing pass using Next.js `after`. Delivery does not block the user's response. All jobs are persisted in Postgres before delivery, so an interrupted request cannot erase the queue. Failures cannot roll back successful business operations.
 
-## Authentication behavior
+Keep the scheduled worker enabled for retries, unread chat reminders and pending jobs beyond the automatic batch. During development, optionally run `npm run email:watch` in a second terminal, or `npm run email:work` for one queue pass. Production must schedule an authenticated **POST** to `/api/internal/email` each minute with `Authorization: Bearer <EMAIL_WORKER_SECRET>`. Do not put the secret in a query string. Configure sufficient request duration (up to 60 seconds); an automatic `after` pass inherits its calling route's duration. Use HTTPS for production `APP_BASE_URL`. Restart/redeploy after changing environment values.
 
-New credential clients receive welcome/admin notifications and a verification email. They may sign in and view the dashboard; creating a ticket requires verification. `/verify-email` accepts the registered email and the emailed 256-bit code, and provides resend. Codes expire in 15 minutes by default (`AUTH_CHALLENGE_TTL_MINUTES`, constrained to 5–30), permit five attempts, and have a 60-second issuance cooldown. Codes are SHA-256 digests in the challenge table, with AES-256-GCM encryption only for the short-lived delivery payload. Existing users remain verified/grandfathered. Google-verified users do not require a second email verification.
+`npm run email:check -- --queue` prints sanitized queue counts without addresses, bodies or secrets. `/admin/email` allows administrators to inspect jobs and retry failures after correcting configuration. Missing settings leave jobs unclaimed. SMTP authentication errors such as 535 require fixing the App Password; 4xx SMTP responses retry with bounded exponential backoff. Connection failures before submission retry; ambiguous disconnects during DATA are marked `uncertain` to avoid duplicates. Raw SMTP errors, credentials and message bodies are never logged.
 
-Forgot-password responses are identical for missing, inactive, credential, and Google-only accounts. The public UI always explains that Google users should use Google sign-in. Reset links use a URL fragment so the secret is not sent in HTTP requests or Referer headers; the page removes the fragment after loading. Successful reset consumes the challenge and increments the session version, invalidating existing sessions on the server and proxy. Passwords use bcrypt (12 rounds), 8 characters minimum and 72 UTF-8 bytes maximum. No password is emailed. Resetting never converts an OAuth-only profile to credentials.
+SMTP cannot guarantee exactly-once delivery. Each event has a unique key and each message a stable Message-ID. Check the sender's Sent folder before manually rescheduling an uncertain job. The `gmail_id` database column is retained for migration compatibility; it now stores the SMTP Message-ID. No schema migration is necessary for the SMTP switch. Do not blindly retry uncertain jobs. Inbox receipt must be checked separately from SMTP acceptance.
 
-Google-created accounts from **before** this migration cannot be distinguished reliably: the previous implementation stored a random bcrypt password without provider metadata. Before enabling recovery, classify known legacy Google-only accounts using authoritative account records and `UPDATE profiles SET auth_provider='google' WHERE id=...`. Do not guess from avatar/name fields. New Google-only accounts are marked automatically; existing credential accounts linked through Google retain their credential reset capability.
+## Database and authentication
 
-Login notifications follow a low-frequency security policy: the first successful sign-in and then at most once per 30 days. They do not claim new-device detection and collect no device/location history. Auth request rate limits persist in Postgres (10 per operation/email and proxy IP per hour). Configure the trusted ingress to overwrite `x-forwarded-for`; otherwise do not trust client-supplied forwarding headers. Verification/reset requests fail closed if their database is unavailable.
+For a new database, first apply `db/schema.sql`. Run `npm run db:migrate` and `npm run db:check` before deployment. Migration files and their ledger rows commit atomically; applied files are checksum checked and must not be edited. The schema check verifies 22 required objects. Existing users remain grandfathered; new credential clients must verify before creating tickets. Sessions retain role checks and version-based revocation after password reset.
 
-## Notification semantics and operations
+Verification displays the signed-in account's email and accepts only its emailed code. Resend resolves the recipient from that session. Verification uses a cryptographically random four-digit code (including leading zeros), keyed HMAC-SHA256 storage bound to the account email, a five-minute expiry, five attempts and a 60-second issuance cooldown. The server-held digest key is derived from the email encryption key to prevent offline guessing from a leaked database. Password resets retain 256-bit tokens with SHA-256 digests and a configurable 15-minute default expiry (`AUTH_CHALLENGE_TTL_MINUTES`, constrained to 5–30). Delivery payloads remain encrypted. After updating from the previous long verification format, request a new code; old pending verification messages are cancelled. Persistent per-email/proxy-IP rate limits apply. Configure trusted ingress to overwrite forwarding headers. Forgot-password responses remain generic; Google-only users should sign in with Google. Legacy Google-only accounts created before provider metadata existed need classification using authoritative account records before enabling their recovery.
 
-Postgres AFTER INSERT triggers create outbox jobs in the same transaction as new profiles, tickets, assignments, and public chat messages. Ticket forms retain a request UUID across retries, and a per-client unique database key reuses the existing ticket and email event for repeated submissions. Transport-level database retries are restricted to SELECT queries, since replaying ambiguous writes can duplicate business operations. Assignment updates do not repeat mail; remove/re-add creates a new assignment event. Internal notes never generate email. Gmail errors occur only in the worker, outside the core write transaction, so delivery failures cannot roll back business operations. If the database cannot persist the business write and outbox together, the write fails atomically.
+Password reset links carry the single-use token in the URL fragment, which the page removes. Reset invalidates existing sessions. Passwords use bcrypt; new passwords require at least eight characters and no more than 72 UTF-8 bytes. No passwords are emailed. Login notices occur on the first successful login and at most once per 30 days, without device/location tracking.
 
-Chat checks recipient ownership/current assignment again at delivery. Initial messages have a two-minute unread grace period. Subsequent messages summarize the latest unread preview/count, use 15-minute recipient/conversation cooldowns, suppress active readers, and avoid self-notification. Polling the existing chat endpoint records reads. An outbox reconciliation scan catches follow-ups arriving after an earlier bucket was sent (last seven days). Chat cooldown retries and send retries are bounded. These are eventual email reminders; the existing chat polling remains the immediate update channel. Configure chat timing persistently without redeploying using `UPDATE email_notification_settings SET chat_cooldown_seconds=900, unread_grace_seconds=120 WHERE id=1`; trigger buckets and worker cooldowns both read that row. The reminder scan horizon is seven days. The active-reader window is two minutes.
+Profile, ticket, assignment and public-message inserts record outbox jobs transactionally. Current ownership, active status and assignments are checked again before sending. Internal notes and self-messages do not generate email. Ticket request UUIDs and unique event keys prevent duplicate notifications. Chat batches unread messages, suppresses active readers and uses persistent cooldown/read tracking. Configure timing with `UPDATE email_notification_settings SET chat_cooldown_seconds=900, unread_grace_seconds=120 WHERE id=1`. Scheduled processing is needed for delayed unread reminders. Keep event keys long enough for deduplication when archiving old completed jobs.
 
-Worker failures record only safe codes and job IDs, never Google's response bodies or message contents. OAuth is refreshed for each send. 429, quota-related 403, network errors before submission, and 5xx failures use bounded exponential backoff (six attempts, Retry-After respected). Permanent configuration/auth/address errors require fixing configuration and manually retrying through `/admin/email`. Successful jobs retain Gmail's message ID. A provider acceptance is not proof of inbox delivery; monitor bounces in the sender mailbox.
+## Troubleshooting and validation
 
-**Exactly-once Gmail delivery cannot be guaranteed:** Gmail send offers no application idempotency key. Unique event keys prevent duplicate enqueue, and database claims prevent concurrent processing. If submission times out or a worker dies after claiming a job, it becomes `uncertain` and is never automatically retried. Check the sender's Sent folder using its stable Message-ID (`<outbox-job-id@sender-domain>`). After confirming it was not sent, an authorized database operator can reschedule that exact job:
+- `SMTP_APP_PASSWORD is missing`: add a Google App Password in `.env.local`; `.env.example` is only a template.
+- `smtp_535`/`smtp_authentication`: check the sender/App Password pairing, 2-Step Verification and account policy. Changing the Google account password revokes App Passwords; create a new one.
+- `smtp_4xx`: temporary rejection or quota; let bounded retries run and reduce volume if necessary.
+- `smtp_connection`: check outbound TCP 465 access on the deployment host, DNS and network policy. TLS verification is never disabled.
+- `smtp_delivery_unknown`/`uncertain`: reconcile against Sent before retrying.
+- No verification code: restart after configuration, click Resend, and inspect `/admin/email`. Previous attempts made without an encryption key did not enqueue a code.
+- Missing columns/tables: run `npm run db:migrate`, then `npm run db:check` against the app's environment.
 
-```sql
-UPDATE email_outbox SET status='pending', attempts=0, available_at=now(), last_error=NULL
-WHERE id='<reviewed-job-uuid>' AND status='uncertain';
-```
-
-If it was sent, record the Gmail message ID and mark sent instead. Automatic resend of ambiguous jobs risks duplicates. Uncertain jobs intentionally suppress further chat reminders until reconciled. The `/admin/email` retry action only accepts failed jobs. Keep inspection and retries restricted to administrators.
-
-Worker maintenance removes old rate-limit entries and clears encrypted challenge payloads after the maximum 30-minute expiry; sent/cancelled payloads are cleared immediately. Apply a retention policy for outbox metadata (for example, archive completed jobs after 90 days while retaining event keys as needed for deduplication). Back up encryption keys securely; rotating them invalidates pending encrypted messages, so expire/reissue challenges deliberately.
-
-## Validation and troubleshooting
-
-Run `npm test`, `npm run typecheck`, `npm run lint`, and `npm run build`. Tests mock all Gmail HTTP requests and use PGlite's isolated Postgres engine to execute the schema, repeatable migration, triggers, challenge SQL, and worker. They do not send live mail. Before production, use a staging database, an authorized dedicated mailbox, and an inbox you control. Create a client, verify, reset, add an employee, assign a ticket, and exchange unread chat messages. Confirm correct recipient/destination, cancellation after read/unassignment, and correct status in `/admin/email`. Never use production users for this smoke test without authorization.
-
-- `oauth_400`/`oauth_401`: reauthorize the sender; check client/refresh token pairing, consent publishing status, revocation, or expired testing grants.
-- `gmail_403`: verify the Gmail API is enabled, the grant includes gmail.send, and the sender/alias is authorized. Quota reasons retry; permission failures require intervention.
-- `gmail_429` or quota errors: allow the scheduled retry; reduce volume and inspect Google quotas. Do not substitute SMTP.
-- `processing_failed`: check canonical URL, encryption key, migration, database permissions, and worker server configuration. Error bodies/secrets are intentionally not logged.
-- Queued indefinitely: check the scheduler is POSTing with the correct header, lease expiry, deployment timeout and database availability.
-- Invalid/expired link: request a fresh challenge after the cooldown; only the latest code is valid, and consumed codes cannot be reused.
-- No worker tables: apply the migration first. Do not point automated tests at your application database.
-
-Live sender authorization, domain/consent configuration, scheduler execution, Neon deployment migration and actual inbox receipt require operator setup and are not established by automated tests.
-
-## Changes and review map
-
-- `lib/email/`: Gmail MIME/HTTP delivery, templates, crypto, durable storage, and the worker.
-- `lib/auth/challenges.ts`, `lib/auth/rate-limit.ts`: single-use challenges and persistent abuse limits.
-- `app/actions/auth.ts`, `lib/auth/session.ts`, `lib/auth/cookies.ts`, `proxy.ts`: recovery, verification, login notices, and session revocation.
-- `app/actions/tickets.ts`, chat GET route and Google callback: authorization and integration with existing flows.
-- Auth pages, client verification banner, `/admin/email`, and sidebar: user and operator controls.
-- `db/migrations/001_email_auth.sql`: additive profile columns, challenges, outbox, worker lease, read tracking, settings, rate limits, indexes, and transactional triggers.
-- `tests/`: Node test runner with an isolated PGlite Postgres database and mocked Gmail. PGlite is a development-only dependency; no production mail library is required.
-
-Existing user work in landing/contact files is outside this feature. The implementation does not apply migrations to the configured database or send live emails during verification.
-
-### Build environment note
-
-The default `npm run build` uses Turbopack and the project's existing `@tailwindcss/turbopack` CSS pipeline. In restricted environments that prevent its helper process from binding a local port, the build may stop with `Operation not permitted`. `npx next build --webpack` can validate application compilation as a fallback, but this repository's Tailwind transform is configured specifically for Turbopack, so validate the default build and rendered styling on the deployment host. Do not treat the fallback compilation as live deployment verification.
+Run `npm test`, `npm run lint`, `npm run typecheck` and the production build. Tests use an isolated PGlite database and mock SMTP completely; no live mail is sent. Live SMTP authentication and actual inbox receipt require a valid App Password and are separate from automated tests. Development's memory mode cannot provide durable mail or recovery. Production requires Postgres and a strong session secret.

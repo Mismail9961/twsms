@@ -5,20 +5,17 @@ const BRAND_NAME = 'Technology World'
 const BRAND_TAGLINE = 'Support & Ticket Management'
 
 function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'xl'; onDark?: boolean }) {
-  const box = size === 'xl' ? 'h-[76px] w-[76px] rounded-[20px] p-3' : 'h-12 w-12 rounded-xl p-1.5'
+  const box = size === 'xl' ? 'h-[76px] w-[76px] rounded-[20px] p-3' : 'h-11 w-11 rounded-xl p-1.5 sm:h-12 sm:w-12'
   return (
     <div className="relative shrink-0">
-      {onDark && (
-        <div
-          className="absolute -inset-3 rounded-[28px] bg-[#1F4FD8]/40 blur-xl"
-          aria-hidden="true"
-        />
+      {size === 'xl' && onDark && (
+        <div className="absolute -inset-3 rounded-[28px] bg-[#6A63D9]/40 blur-xl" aria-hidden="true" />
       )}
       <div
-        className={`${box} relative flex items-center justify-center bg-gradient-to-b from-white to-slate-100 ${
+        className={`${box} relative flex items-center justify-center bg-white ${
           onDark
-            ? 'shadow-[0_10px_30px_-8px_rgba(0,0,0,0.6)] ring-1 ring-white/40'
-            : 'border border-slate-200 shadow-[0_2px_6px_rgba(15,27,45,0.08)]'
+            ? 'shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)] ring-1 ring-white/40'
+            : 'border border-[#2C2772]/15 shadow-[0_2px_6px_rgba(44,39,114,0.12)]'
         }`}
       >
         <Image
@@ -44,9 +41,9 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   const year = new Date().getFullYear()
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-white selection:bg-[#1F4FD8] selection:text-white lg:flex-row">
+    <div className="flex min-h-screen min-h-dvh w-full flex-col bg-white selection:bg-[#2C2772] selection:text-white lg:flex-row">
       {/* Brand panel (desktop) */}
-      <aside className="relative hidden overflow-hidden bg-[#0F1B2D] text-white lg:flex lg:w-[46%] xl:w-1/2">
+      <aside className="relative hidden overflow-hidden bg-[#2C2772] text-white lg:flex lg:w-[46%] xl:w-1/2">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
@@ -57,7 +54,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full bg-[#1F4FD8]/30 blur-3xl"
+          className="pointer-events-none absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full bg-[#6A63D9]/30 blur-3xl"
           aria-hidden="true"
         />
 
@@ -66,7 +63,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <Logo size="xl" onDark />
             <div>
               <p className="text-2xl font-semibold leading-tight tracking-tight">{BRAND_NAME}</p>
-              <p className="mt-1 text-sm text-slate-400">{BRAND_TAGLINE}</p>
+              <p className="mt-1 text-sm text-white/70">{BRAND_TAGLINE}</p>
             </div>
           </div>
 
@@ -74,20 +71,20 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             <h1 className="text-3xl font-semibold leading-tight tracking-tight xl:text-4xl">
               Every request, tracked from first report to resolution.
             </h1>
-            <p className="mt-4 text-sm leading-relaxed text-slate-300">
+            <p className="mt-4 text-sm leading-relaxed text-white/80">
               One place for your organization to raise tickets, follow progress, and stay in step with our operations
               team.
             </p>
 
-            <div className="mt-10 rounded-xl border border-white/10 bg-white/[0.04] p-2 backdrop-blur-sm" aria-hidden="true">
-              <ul className="divide-y divide-white/5">
+            <div className="mt-10 rounded-xl border border-white/15 bg-white/[0.06] p-2 backdrop-blur-sm" aria-hidden="true">
+              <ul className="divide-y divide-white/10">
                 {queue.map((row) => (
                   <li key={row.title} className="flex items-center justify-between gap-4 px-3.5 py-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">{row.title}</p>
-                      <p className="mt-0.5 truncate text-xs text-slate-400">{row.meta}</p>
+                      <p className="mt-0.5 truncate text-xs text-white/60">{row.meta}</p>
                     </div>
-                    <span className="flex shrink-0 items-center gap-2 rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-200">
+                    <span className="flex shrink-0 items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white">
                       <span className={`h-1.5 w-1.5 rounded-full ${row.dot}`} />
                       {row.status}
                     </span>
@@ -97,7 +94,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-white/60">
             &copy; {year} {BRAND_NAME}. All rights reserved.
           </p>
         </div>
@@ -106,17 +103,17 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Content column */}
       <div className="flex min-w-0 flex-1 flex-col bg-white">
         {/* Compact brand bar (phones and tablets) */}
-        <header className="flex items-center gap-3 border-b border-slate-100 px-4 py-3.5 sm:gap-4 sm:px-6 lg:hidden">
-          <Logo />
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold leading-tight tracking-tight text-slate-900">{BRAND_NAME}</p>
-            <p className="truncate text-xs text-slate-500">{BRAND_TAGLINE}</p>
+        <header className="flex items-center gap-3 bg-[#2C2772] px-4 py-3 text-white sm:gap-4 sm:px-6 sm:py-3.5 lg:hidden">
+          <Logo onDark />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold leading-tight tracking-tight sm:text-base">{BRAND_NAME}</p>
+            <p className="truncate text-[11px] text-white/70 sm:text-xs">{BRAND_TAGLINE}</p>
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
 
-        <footer className="px-4 pb-6 pt-2 text-center text-xs text-slate-400 lg:hidden">
+        <footer className="px-4 pb-6 pt-2 text-center text-[11px] text-[#2C2772]/60 sm:text-xs lg:hidden">
           &copy; {year} {BRAND_NAME}. All rights reserved.
         </footer>
       </div>
