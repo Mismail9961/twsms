@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn, getInitials } from '@/lib/utils'
@@ -36,119 +37,137 @@ function getNavItems(role: string, unreadNotifications: number): NavItem[] {
   if (role === 'admin') {
     return [
       { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/admin/tickets', label: 'All Tickets', icon: Ticket },
+      { href: '/admin/tickets', label: 'All tickets', icon: Ticket },
       { href: '/admin/clients', label: 'Clients', icon: Users },
       { href: '/admin/employees', label: 'Employees', icon: UserCheck },
       { href: '/admin/categories', label: 'Categories', icon: Tag },
       { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
       { href: '/admin/ratings', label: 'Ratings', icon: Star },
       { href: '/admin/notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications },
-      { href: '/admin/profile', label: 'Profile & Settings', icon: Settings },
+      { href: '/admin/profile', label: 'Profile and settings', icon: Settings },
     ]
   }
 
   if (role === 'employee') {
     return [
       { href: '/employee', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/employee/tickets', label: 'My Tickets', icon: Ticket },
+      { href: '/employee/tickets', label: 'My tickets', icon: Ticket },
       { href: '/employee/notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications },
-      { href: '/employee/profile', label: 'Profile & Settings', icon: Settings },
+      { href: '/employee/profile', label: 'Profile and settings', icon: Settings },
     ]
   }
 
   // client (default)
   return [
     { href: '/client', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/client/tickets', label: 'My Tickets', icon: Ticket },
-    { href: '/client/tickets/new', label: 'New Ticket', icon: Plus },
+    { href: '/client/tickets', label: 'My tickets', icon: Ticket },
+    { href: '/client/tickets/new', label: 'New ticket', icon: Plus },
     { href: '/client/notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications },
-    { href: '/client/profile', label: 'Profile & Settings', icon: Settings },
+    { href: '/client/profile', label: 'Profile and settings', icon: Settings },
   ]
-}
-
-function TechWorldLogo() {
-  return (
-    <div className="h-8 w-8 rounded-lg bg-white p-1 shadow flex items-center justify-center flex-shrink-0">
-      <img
-        src="/logo.png"
-        alt="Technology World"
-        className="h-full w-full object-contain"
-      />
-    </div>
-  )
 }
 
 function getRoleLabel(role: string): string {
   if (role === 'admin') return 'Administrator'
-  if (role === 'employee') return 'Support Staff'
+  if (role === 'employee') return 'Support staff'
   return 'Client'
 }
 
-export function Sidebar({ user, unreadNotifications = 0, isOpen = false, onClose }: SidebarProps) {
+function TechWorldLogo() {
+  return (
+    <div className="flex h-12 w-full max-w-[11rem] items-center justify-center rounded-xl bg-white px-4 py-2 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] ring-1 ring-white/30">
+      <img src="/logo.png" alt="Technology World" className="h-full w-full object-contain" />
+    </div>
+  )
+}
+
+const focusRing =
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B2D]'
+
+interface SidebarContentProps extends SidebarProps {
+  mobile?: boolean
+  closeRef?: React.RefObject<HTMLButtonElement | null>
+}
+
+function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false, closeRef }: SidebarContentProps) {
   const pathname = usePathname()
   const navItems = getNavItems(user.role, unreadNotifications)
 
-  function isActive(href: string): boolean {
-    // Exact match for dashboard routes to avoid over-matching
-    if (
-      href === '/admin' ||
-      href === '/employee' ||
-      href === '/client'
-    ) {
-      return pathname === href
-    }
-    return pathname === href || pathname.startsWith(href + '/')
-  }
+  // Only the most specific matching item is active, so "My tickets" is not
+  // highlighted together with "New ticket".
+  const activeHref =
+    navItems
+      .filter((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+      .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full bg-slate-900">
-      {/* Logo / Branding */}
-      <div className="flex items-center justify-between px-4 py-5 border-b border-slate-800">
-        <div className="flex items-center gap-3">
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#0F1B2D]">
+      {/* Soft light, matches the sign-in panel */}
+      <div
+        className="pointer-events-none absolute -left-20 -top-24 h-56 w-56 rounded-full bg-[#1F4FD8]/25 blur-3xl"
+        aria-hidden="true"
+      />
+
+      {/* Branding */}
+      <div className="relative flex items-start justify-between gap-3 border-b border-white/10 px-4 pb-4 pt-5">
+        <div className="min-w-0 flex-1">
           <TechWorldLogo />
-          <div className="min-w-0">
-            <p className="text-white font-semibold text-sm leading-tight truncate">Technology World</p>
-            <p className="text-slate-400 text-xs truncate">Support System</p>
-          </div>
+          <p className="mt-2.5 truncate text-xs text-slate-400">Support system</p>
         </div>
-        {/* Close button — mobile only */}
-        <button
-          onClick={onClose}
-          className="lg:hidden p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          aria-label="Close sidebar"
-        >
-          <X className="w-4 h-4" />
-        </button>
+
+        {mobile && (
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className={`-mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${focusRing}`}
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <nav aria-label="Main navigation" className="relative flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
           const Icon = item.icon
-          const active = isActive(item.href)
+          const active = item.href === activeHref
+          const hasBadge = item.badge !== undefined && item.badge > 0
+
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onClose}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                active
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                'group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150',
+                focusRing,
+                active ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
               )}
             >
+              {active && (
+                <span
+                  className="absolute -left-3 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-sky-400"
+                  aria-hidden="true"
+                />
+              )}
               <Icon
-                className={cn(
-                  'w-4.5 h-4.5 flex-shrink-0 transition-colors',
-                  active ? 'text-white' : 'text-slate-400 group-hover:text-white'
-                )}
                 size={18}
+                className={cn(
+                  'shrink-0 transition-colors',
+                  active ? 'text-sky-300' : 'text-slate-400 group-hover:text-slate-200'
+                )}
+                aria-hidden="true"
               />
               <span className="flex-1 truncate">{item.label}</span>
-              {item.badge !== undefined && item.badge > 0 && (
-                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold bg-red-500 text-white leading-none">
-                  {item.badge > 99 ? '99+' : item.badge}
+              {hasBadge && (
+                <span
+                  className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-semibold leading-none text-white"
+                  aria-label={`${item.badge} unread`}
+                >
+                  {item.badge! > 99 ? '99+' : item.badge}
                 </span>
               )}
             </Link>
@@ -156,60 +175,103 @@ export function Sidebar({ user, unreadNotifications = 0, isOpen = false, onClose
         })}
       </nav>
 
-      {/* User info at bottom */}
-      <div className="border-t border-slate-800 p-4">
-        <div className="flex items-center gap-3 mb-3">
+      {/* Account */}
+      <div className="relative border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="flex items-center gap-3">
           {user.avatar_url ? (
             <img
               src={user.avatar_url}
-              alt={user.full_name}
-              className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-2 ring-slate-700"
+              alt=""
+              className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/15"
             />
           ) : (
-            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 ring-2 ring-slate-700">
-              <span className="text-white text-xs font-semibold">{getInitials(user.full_name)}</span>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1F4FD8] ring-2 ring-white/15">
+              <span className="text-xs font-semibold text-white">{getInitials(user.full_name)}</span>
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium leading-tight truncate">{user.full_name}</p>
-            <p className="text-slate-400 text-xs truncate">{getRoleLabel(user.role)}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium leading-tight text-white">{user.full_name}</p>
+            <p className="mt-0.5 truncate text-xs text-slate-400">{getRoleLabel(user.role)}</p>
           </div>
         </div>
-        <form action="/api/auth/signout" method="POST">
+
+        <form action="/api/auth/signout" method="POST" className="mt-3">
           <button
             type="submit"
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors group"
+            className={`group flex min-h-[44px] w-full items-center gap-2.5 rounded-lg border border-white/10 px-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white ${focusRing}`}
           >
-            <LogOut className="w-4 h-4 flex-shrink-0 group-hover:text-red-400 transition-colors" size={16} />
-            <span>Sign Out</span>
+            <LogOut size={16} className="shrink-0 text-slate-400 transition-colors group-hover:text-white" aria-hidden="true" />
+            <span>Sign out</span>
           </button>
         </form>
       </div>
     </div>
   )
+}
+
+export function Sidebar({ user, unreadNotifications = 0, isOpen = false, onClose }: SidebarProps) {
+  const closeRef = useRef<HTMLButtonElement | null>(null)
+
+  // Mobile drawer: close on Escape, lock page scroll, move focus into the drawer
+  useEffect(() => {
+    if (!isOpen) return
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose?.()
+    }
+    document.addEventListener('keydown', onKeyDown)
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isOpen, onClose])
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:z-50">
-        {sidebarContent}
+      <aside className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
+        <SidebarContent user={user} unreadNotifications={unreadNotifications} />
       </aside>
 
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-            aria-hidden="true"
-            onClick={onClose}
+      {/* Mobile drawer: always mounted so it can slide, hidden from tab order when closed */}
+      <div
+        className={cn(
+          'fixed inset-0 z-50 lg:hidden transition-[visibility] duration-300',
+          isOpen ? 'visible' : 'invisible'
+        )}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
+        aria-hidden={!isOpen}
+      >
+        <div
+          className={cn(
+            'absolute inset-0 bg-[#0F1B2D]/60 backdrop-blur-[2px] transition-opacity duration-300 motion-reduce:transition-none',
+            isOpen ? 'opacity-100' : 'opacity-0'
+          )}
+          aria-hidden="true"
+          onClick={onClose}
+        />
+        <div
+          className={cn(
+            'absolute inset-y-0 left-0 w-[84vw] max-w-[18rem] shadow-2xl transition-transform duration-300 ease-out motion-reduce:transition-none',
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          <SidebarContent
+            user={user}
+            unreadNotifications={unreadNotifications}
+            onClose={onClose}
+            mobile
+            closeRef={closeRef}
           />
-          {/* Drawer */}
-          <div className="relative flex flex-col w-64 max-w-xs flex-1 shadow-2xl">
-            {sidebarContent}
-          </div>
         </div>
-      )}
+      </div>
     </>
   )
 }
