@@ -14,6 +14,7 @@ import { TicketChat } from '@/components/tickets/ticket-chat'
 import { ResolutionActions } from './resolution-actions'
 import { RatingForm } from './rating-form'
 import { formatDateTime, formatDate, getInitials, formatFileSize } from '@/lib/utils'
+import { TICKET_RESOLUTION_METHOD_LABELS } from '@/lib/types'
 
 export default async function ClientTicketDetailPage({
   params,
@@ -92,6 +93,12 @@ export default async function ClientTicketDetailPage({
                   {ticket.rating.overall_rating} / 5 Stars
                 </span>
               </div>
+              {ticket.rating.resolution_method && (
+                <p className="text-xs text-gray-700">
+                  <span className="font-semibold">Resolution:</span>{' '}
+                  {TICKET_RESOLUTION_METHOD_LABELS[ticket.rating.resolution_method]}
+                </p>
+              )}
               {ticket.rating.feedback && (
                 <p className="text-xs text-gray-600 italic mt-1">
                   &ldquo;{ticket.rating.feedback}&rdquo;

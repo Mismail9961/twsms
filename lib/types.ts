@@ -117,9 +117,23 @@ export interface TicketRating {
   ticket_id: string
   client_id: string
   overall_rating: number
+  resolution_method?: TicketResolutionMethod
   feedback?: string
   created_at: string
   client?: Profile
+}
+
+export const TICKET_RESOLUTION_METHOD_LABELS = {
+  permanent_fix: 'A permanent fix was applied',
+  workaround: 'A temporary workaround was provided',
+  guidance: 'Instructions or guidance solved the problem',
+  partial_fix: 'The problem was only partially resolved',
+  other: 'Other',
+} as const
+
+export type TicketResolutionMethod = keyof typeof TICKET_RESOLUTION_METHOD_LABELS
+export function isTicketResolutionMethod(value: string): value is TicketResolutionMethod {
+  return Object.hasOwn(TICKET_RESOLUTION_METHOD_LABELS, value)
 }
 
 export interface Notification {

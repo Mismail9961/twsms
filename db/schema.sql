@@ -159,9 +159,12 @@ CREATE TABLE IF NOT EXISTS ticket_ratings (
   ticket_id UUID UNIQUE NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
   client_id UUID NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
   overall_rating INTEGER NOT NULL CHECK (overall_rating BETWEEN 1 AND 5),
+  resolution_method VARCHAR(50),
   feedback TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE ticket_ratings ADD COLUMN IF NOT EXISTS resolution_method VARCHAR(50);
 
 CREATE INDEX IF NOT EXISTS idx_ratings_ticket ON ticket_ratings(ticket_id);
 CREATE INDEX IF NOT EXISTS idx_ratings_client ON ticket_ratings(client_id);

@@ -3,24 +3,34 @@
 import { useState } from 'react'
 import { Star, Send, Loader2 } from 'lucide-react'
 import { submitRating } from '@/app/actions/tickets'
+import { isTicketResolutionMethod } from '@/lib/types'
+import type { TicketResolutionMethod } from '@/lib/types'
 
 export function RatingForm({ ticketId }: { ticketId: string }) {
   const [rating, setRating] = useState(5)
   const [hoverRating, setHoverRating] = useState(0)
+  const [resolutionMethod, setResolutionMethod] = useState<TicketResolutionMethod | ''>('')
   const [feedback, setFeedback] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
+    if (!resolutionMethod) {
+      setSubmitError('Please select how the problem was resolved.')
+      return
+    }
 
     setIsSubmitting(true)
+    setSubmitError('')
     try {
-      await submitRating(ticketId, rating, feedback)
+      await submitRating(ticketId, rating, resolutionMethod, feedback)
       setSubmitted(true)
     } catch (err) {
       console.error(err)
+      setSubmitError('Unable to submit your feedback. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -38,8 +48,8 @@ export function RatingForm({ ticketId }: { ticketId: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <h4 className="text-sm font-bold text-blue-950">How would you rate our technical support?</h4>
-        <p className="text-xs text-blue-700 mt-0.5">Please evaluate the speed, accuracy, and overall resolution experience.</p>
+        <h4 className="text-sm font-bold text-blue-950">How satisfied are you with the resolution?</h4>
+        <p className="text-xs text-blue-700 mt-0.5">Rate your experience and tell us how the problem was solved.</p>
       </div>
 
       <div className="flex items-center gap-1.5">
@@ -67,6 +77,30 @@ export function RatingForm({ ticketId }: { ticketId: string }) {
       </div>
 
       <div>
+        <label htmlFor="resolution-method" className="mb-1 block text-xs font-semibold text-blue-950">
+          How was the problem solved? <span className="text-red-600">*</span>
+        </label>
+        <select
+          id="resolution-method"
+          required
+          value={resolutionMethod}
+          onChange={(e) => {
+            const value = e.target.value
+            setResolutionMethod(value === '' || isTicketResolutionMethod(value) ? value : '')
+          }}
+          disabled={isSubmitting}
+          className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+        >
+          <option value="">Select a resolution method...</option>
+          <option value="permanent_fix">A permanent fix was applied</option>
+          <option value="workaround">A temporary workaround was provided</option>
+          <option value="guidance">Instructions or guidance solved the problem</option>
+          <option value="partial_fix">The problem was only partially resolved</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div>
         <textarea
           rows={2}
           value={feedback}
@@ -75,6 +109,12 @@ export function RatingForm({ ticketId }: { ticketId: string }) {
           className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
         />
       </div>
+
+      {submitError && (
+        <p role="alert" className="text-xs font-medium text-red-700">
+          {submitError}
+        </p>
+      )}
 
       <div className="flex justify-end">
         <button

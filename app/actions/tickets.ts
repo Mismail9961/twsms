@@ -6,7 +6,14 @@ import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { getSession } from '@/lib/auth/session'
 import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
-import type { Ticket, TicketStatus, Priority, MessageType, Role } from '@/lib/types'
+import {
+  isTicketResolutionMethod,
+  type Ticket,
+  type TicketStatus,
+  type Priority,
+  type MessageType,
+  type Role,
+} from '@/lib/types'
 
 const createTicketSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
@@ -423,6 +430,7 @@ export async function confirmResolution(ticketId: string, confirmed: boolean) {
 export async function submitRating(
   ticketId: string,
   rating: number,
+  resolutionMethod: string,
   feedback?: string
 ) {
   const session = await getSession()
@@ -434,18 +442,25 @@ export async function submitRating(
     throw new Error('Rating must be between 1 and 5.')
   }
 
+  if (!isTicketResolutionMethod(resolutionMethod)) {
+    throw new Error('Please select how the problem was resolved.')
+  }
+
   const now = new Date().toISOString()
 
   if (isNeonConfigured()) {
     try {
       await dbQuery(
-        `INSERT INTO ticket_ratings (ticket_id, client_id, overall_rating, feedback)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO ticket_ratings (
+           ticket_id, client_id, overall_rating, resolution_method, feedback
+         )
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (ticket_id) DO NOTHING`,
-        [ticketId, session.id, rating, feedback || null]
+        [ticketId, session.id, rating, resolutionMethod, feedback || null]
       )
     } catch (err) {
       console.error('[submitRating Neon Error]:', err)
+      throw new Error('Failed to save your rating. Please try again.')
     }
   } else {
     const existing = memoryDb.ratings.find((r) => r.ticket_id === ticketId)
@@ -455,6 +470,7 @@ export async function submitRating(
         ticket_id: ticketId,
         client_id: session.id,
         overall_rating: rating,
+        resolution_method: resolutionMethod,
         feedback: feedback || '',
         created_at: now,
       })

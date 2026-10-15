@@ -1,14 +1,24 @@
 import Link from 'next/link'
 import { Star, MessageSquare } from 'lucide-react'
-import { memoryDb } from '@/lib/db'
+import { dbQuery, isNeonConfigured, memoryDb } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
+import { TICKET_RESOLUTION_METHOD_LABELS } from '@/lib/types'
+import type { Profile, Ticket, TicketRating } from '@/lib/types'
 
 export default async function AdminRatingsPage() {
-  const ratings = memoryDb.ratings.map((r) => {
-    const client = memoryDb.profiles.find((p) => p.id === r.client_id)
-    const ticket = memoryDb.tickets.find((t) => t.id === r.ticket_id)
-    return { ...r, client, ticket }
-  })
+  const ratings = isNeonConfigured()
+    ? await dbQuery<TicketRating & { client: Profile; ticket: Ticket }>(
+        `SELECT r.*, row_to_json(p.*) AS client, row_to_json(t.*) AS ticket
+         FROM ticket_ratings r
+         JOIN profiles p ON p.id = r.client_id
+         JOIN tickets t ON t.id = r.ticket_id
+         ORDER BY r.created_at DESC`
+      )
+    : memoryDb.ratings.map((r) => {
+        const client = memoryDb.profiles.find((p) => p.id === r.client_id)
+        const ticket = memoryDb.tickets.find((t) => t.id === r.ticket_id)
+        return { ...r, client, ticket }
+      })
 
   const total = ratings.length
   const avg =
@@ -82,6 +92,7 @@ export default async function AdminRatingsPage() {
                 <th className="py-3.5 px-6">Ticket</th>
                 <th className="py-3.5 px-6">Client</th>
                 <th className="py-3.5 px-6">Rating</th>
+                <th className="py-3.5 px-6">Resolution Method</th>
                 <th className="py-3.5 px-6">Feedback Comments</th>
                 <th className="py-3.5 px-6 text-right">Date</th>
               </tr>
@@ -110,6 +121,11 @@ export default async function AdminRatingsPage() {
                         />
                       ))}
                     </div>
+                  </td>
+                  <td className="py-4 px-6 text-xs text-gray-600">
+                    {r.resolution_method
+                      ? TICKET_RESOLUTION_METHOD_LABELS[r.resolution_method] || r.resolution_method
+                      : <span className="text-gray-400 italic">Not provided</span>}
                   </td>
                   <td className="py-4 px-6 text-xs text-gray-600 max-w-md">
                     {r.feedback ? `"${r.feedback}"` : <span className="text-gray-400 italic">No written comment</span>}
