@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState, Suspense } from 'react'
+import { useActionState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from '@/app/actions/auth'
@@ -13,14 +13,6 @@ function LoginForm() {
   const [state, formAction, isPending] = useActionState(signIn, initialState)
   const searchParams = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
-
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const fillCredentials = (e: string, p: string) => {
-    setEmail(e)
-    setPassword(p)
-  }
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-slate-100">
@@ -55,8 +47,6 @@ function LoginForm() {
             type="email"
             autoComplete="email"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
             disabled={isPending}
             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-sm transition-all"
             placeholder="you@company.com"
@@ -85,8 +75,6 @@ function LoginForm() {
             type="password"
             autoComplete="current-password"
             required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
             disabled={isPending}
             className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-sm transition-all"
             placeholder="••••••••"
@@ -115,36 +103,6 @@ function LoginForm() {
           )}
         </button>
       </form>
-
-      {/* Quick Test Demo Credentials */}
-      <div className="mt-6 pt-5 border-t border-slate-100">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 text-center">
-          Quick Demo Accounts
-        </p>
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => fillCredentials('admin@technologyworld.com', 'Admin@12345')}
-            className="text-[11px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-center transition-colors"
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            onClick={() => fillCredentials('john.dev@technologyworld.com', 'Employee@12345')}
-            className="text-[11px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-center transition-colors"
-          >
-            Employee
-          </button>
-          <button
-            type="button"
-            onClick={() => fillCredentials('client@acmecorp.com', 'Client@12345')}
-            className="text-[11px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-center transition-colors"
-          >
-            Client
-          </button>
-        </div>
-      </div>
 
       <p className="mt-6 text-center text-xs text-slate-500">
         New client organization?{' '}
