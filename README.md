@@ -207,3 +207,16 @@ Specify the applicable license before distributing or reusing this project. If n
 **TWSMS — Technology World Support Management System**
 
 Built with Next.js and Neon PostgreSQL.
+
+## Email, verification and password recovery
+
+Application email is delivered exclusively by the Gmail API through a durable Postgres outbox. Apply [the migration](db/migrations/001_email_auth.sql) before deploying and follow [Gmail setup and operations](docs/email-setup.md) for sender authorization, server-only environment variables, scheduling, notification policies, safe retries, and tests. Copy the placeholder-only `.env.example` to your local environment without overwriting existing credentials.
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+```
+
+Live email delivery requires an authorized Gmail sender and an authenticated scheduler; it is not exercised by the automated tests.

@@ -67,7 +67,9 @@ async function queryNeon<T>(queryText: string, params: unknown[]): Promise<T[]> 
   }
 
   let lastError: unknown
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  // Retrying an ambiguous INSERT could create a second business record and notification.
+  const maxAttempts = /^\s*SELECT\b/i.test(queryText) ? 2 : 1
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const rows = await sql.query(queryText, params)
       return (Array.isArray(rows) ? rows : []) as T[]
@@ -77,7 +79,7 @@ async function queryNeon<T>(queryText: string, params: unknown[]): Promise<T[]> 
         throw err
       }
       lastError = err
-      if (attempt < 2) {
+      if (attempt < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, 150))
       }
     }
@@ -88,7 +90,7 @@ async function queryNeon<T>(queryText: string, params: unknown[]): Promise<T[]> 
 
 /**
  * Execute a SQL query either against Neon Postgres or the in-memory store.
- * When DATABASE_URL is set, queries run against Neon with fallback for non-production environments.
+ * When DATABASE_URL is set, queries run against Neon and failures never fall back to demo data.
  */
 export async function dbQuery<T = unknown>(queryText: string, params: unknown[] = []): Promise<T[]> {
   if (isNeonConfigured()) {
@@ -99,14 +101,11 @@ export async function dbQuery<T = unknown>(queryText: string, params: unknown[] 
       if (error?.code && /^[0-9A-Z]{5}$/.test(error.code)) {
         throw err
       }
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[Neon DB unavailable - falling back to memory store]:', error?.message || err)
-        return memoryDb.query<T>(queryText, params)
-      }
       throw err
     }
   }
 
+  if (process.env.NODE_ENV === 'production') throw new Error('Database is not configured')
   return memoryDb.query<T>(queryText, params)
 }
 
@@ -115,6 +114,7 @@ export async function dbQueryRequired<T = unknown>(
   params: unknown[] = []
 ): Promise<T[]> {
   if (!isNeonConfigured()) {
+    if (process.env.NODE_ENV === 'production') throw new Error('Database is not configured')
     return memoryDb.query<T>(queryText, params)
   }
 

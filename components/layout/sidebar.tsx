@@ -46,6 +46,7 @@ function getNavItems(role: string, unreadNotifications: number): NavItem[] {
       { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
       { href: '/admin/ratings', label: 'Ratings', icon: Star },
       { href: '/admin/notifications', label: 'Notifications', icon: Bell, badge: unreadNotifications },
+      { href: '/admin/email', label: 'Email delivery', icon: Bell },
       { href: '/admin/profile', label: 'Profile and settings', icon: Settings },
     ]
   }

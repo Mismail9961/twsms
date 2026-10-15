@@ -1,3 +1,5 @@
+import { emailQuery } from '@/lib/email/store'
+import { isNeonConfigured } from '@/lib/db'
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import type { NextResponse } from 'next/server'
@@ -18,7 +20,10 @@ export interface SessionPayload {
 }
 
 export async function encodeSessionToken(user: Profile) {
+  if (process.env.NODE_ENV === 'production' && !isNeonConfigured()) throw new Error('Persistent database required')
+  const [record] = isNeonConfigured() ? await emailQuery<{ session_version: number }>('SELECT session_version FROM profiles WHERE id=$1', [user.id]) : []
   return new SignJWT({
+    session_version: record?.session_version ?? 0,
     id: user.id,
     email: user.email,
     role: user.role,
@@ -32,7 +37,7 @@ export async function encodeSessionToken(user: Profile) {
 }
 
 /**
- * Creates an encrypted JWT session cookie valid for 7 days
+ * Creates a signed JWT session cookie valid for 7 days
  */
 export async function createSession(user: Profile) {
   const token = await encodeSessionToken(user)
@@ -57,11 +62,17 @@ export function clearSessionCookie(response: NextResponse) {
  */
 export async function getSession(): Promise<SessionPayload | null> {
   try {
+    if (process.env.NODE_ENV === 'production' && !isNeonConfigured()) return null
     const cookieStore = await cookies()
     const token = cookieStore.get(SESSION_COOKIE)?.value
     if (!token || token.trim().length === 0) return null
 
     const { payload } = await jwtVerify(token, getSessionSecretKey())
+    if (isNeonConfigured()) {
+      const [record] = await emailQuery<{ session_version: number; account_status: string; role: Role; email: string; full_name: string }>('SELECT session_version,account_status,role,email,full_name FROM profiles WHERE id=$1', [payload.id])
+      if (!record || record.account_status !== 'active' || record.session_version !== (payload.session_version ?? 0)) return null
+      payload.role = record.role; payload.email = record.email; payload.full_name = record.full_name
+    }
     return {
       id: payload.id as string,
       email: payload.email as string,

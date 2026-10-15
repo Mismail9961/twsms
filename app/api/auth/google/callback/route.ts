@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { applySessionCookie, dashboardPathForRole, encodeSessionToken } from '@/lib/auth/session'
 import { getGoogleOAuthConfig, GOOGLE_OAUTH_COOKIE } from '@/lib/auth/google'
 import { dbQuery, isNeonConfigured, memoryDb } from '@/lib/db'
+import { emailQuery } from '@/lib/email/store'
 import type { Profile } from '@/lib/types'
 
 const googleJwks = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'))
@@ -55,8 +56,8 @@ async function getOrCreateProfile(googleProfile: GoogleProfile): Promise<Profile
 
     const passwordHash = await bcrypt.hash(randomBytes(32).toString('base64url'), 10)
     const createdProfiles = await dbQuery<Profile>(
-      `INSERT INTO profiles (full_name, email, password_hash, role, account_status, avatar_url)
-       VALUES ($1, $2, $3, 'client', 'active', $4)
+      `INSERT INTO profiles (full_name, email, password_hash, role, account_status, avatar_url, auth_provider)
+       VALUES ($1, $2, $3, 'client', 'active', $4, 'google')
        ON CONFLICT (email) DO NOTHING
        RETURNING id, full_name, email, role, account_status, avatar_url, created_at, updated_at`,
       [googleProfile.name?.trim() || email, email, passwordHash, googleProfile.picture || null]
@@ -171,6 +172,10 @@ export async function GET(request: NextRequest) {
       return response('inactive_account')
     }
 
+    if (isNeonConfigured()) {
+      await emailQuery('UPDATE profiles SET email_verified_at=now(),requires_email_verification=false WHERE id=$1', [profile.id])
+      try { await emailQuery(`WITH changed AS (UPDATE profiles SET last_login_notice_at=now() WHERE id=$1 AND (last_login_notice_at IS NULL OR last_login_notice_at<now()-interval '30 days') RETURNING id) INSERT INTO email_outbox(event_key,kind,recipient_id) SELECT 'login:'||id||':'||CURRENT_DATE,'login',id FROM changed ON CONFLICT DO NOTHING`, [profile.id]) } catch { console.error('[Login notice] Could not enqueue') }
+    }
     const token = await encodeSessionToken(profile)
     const destination = dashboardPathForRole(profile.role)
     const success = applySessionCookie(

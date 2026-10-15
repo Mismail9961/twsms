@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { emailQuery } from '@/lib/email/store'
+import { isNeonConfigured } from '@/lib/db'
 import { jwtVerify } from 'jose'
 import {
   SESSION_COOKIE,
@@ -7,7 +9,14 @@ import {
   getSessionSecretKey,
 } from '@/lib/auth/cookies'
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/unauthorized']
+const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password']
+const PUBLIC_ROUTES = [
+  ...AUTH_ROUTES,
+  '/verify-email',
+  '/unauthorized',
+  '/contact',
+  '/contact-us',
+]
 
 function dashboardPath(role: string) {
   if (role === 'admin') return '/admin'
@@ -41,6 +50,11 @@ export async function proxy(request: NextRequest) {
   if (token && token.length > 0) {
     try {
       const { payload } = await jwtVerify(token, getSessionSecretKey())
+      if (isNeonConfigured()) {
+        const [record] = await emailQuery<{ session_version: number; account_status: string; role: string }>('SELECT session_version,account_status,role FROM profiles WHERE id=$1', [payload.id])
+        if (!record || record.account_status !== 'active' || record.session_version !== (payload.session_version ?? 0)) throw new Error('Invalid session')
+        payload.role = record.role
+      }
       sessionUser = {
         id: payload.id as string,
         role: payload.role as string,
@@ -54,12 +68,18 @@ export async function proxy(request: NextRequest) {
     tokenInvalid = true
   }
 
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
+  // Alias /contact-us to /contact
+  if (pathname === '/contact-us') {
+    return NextResponse.redirect(new URL('/contact', request.url))
+  }
 
-  if (pathname === '/') {
+  // Public pages accessible to everyone without auth or authorization
+  if (pathname === '/' || pathname.startsWith('/contact')) {
     const response = NextResponse.next()
     return tokenInvalid ? clearInvalidSession(response) : response
   }
+
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
 
   if (!sessionUser && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)
@@ -73,7 +93,9 @@ export async function proxy(request: NextRequest) {
     return tokenInvalid ? clearInvalidSession(response) : response
   }
 
-  if (sessionUser && isPublicRoute && pathname !== '/unauthorized') {
+  // Logged-in users navigating to login/signup/reset are redirected to their dashboard
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  if (sessionUser && isAuthRoute && pathname !== '/reset-password') {
     return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
   }
 

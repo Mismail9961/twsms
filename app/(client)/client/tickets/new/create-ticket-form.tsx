@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, AlertCircle } from 'lucide-react'
 import { createTicket } from '@/app/actions/tickets'
@@ -14,6 +14,13 @@ interface CreateTicketFormProps {
 const initialState: TicketActionState = undefined
 
 export function CreateTicketForm({ categories }: CreateTicketFormProps) {
+  const requestKey = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (requestKey.current && !requestKey.current.value) {
+      requestKey.current.defaultValue = crypto.randomUUID()
+      requestKey.current.value = requestKey.current.defaultValue
+    }
+  }, [])
   const [state, formAction, isPending] = useActionState(createTicket, initialState)
 
   return (
@@ -26,6 +33,7 @@ export function CreateTicketForm({ categories }: CreateTicketFormProps) {
       )}
 
       <form action={formAction} className="space-y-6">
+        <input type="hidden" name="request_key" ref={requestKey} />
         {/* Title */}
         <div>
           <label htmlFor="title" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">

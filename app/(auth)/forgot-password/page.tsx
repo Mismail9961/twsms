@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
         </div>
         <h2 className="text-xl font-bold text-slate-900 mb-2">Check your email</h2>
         <p className="text-slate-500 text-sm mb-6">
-          We&apos;ve sent a password reset link to your email address. Please check your inbox and follow the instructions.
+          If an eligible account exists, a reset link will be sent. Check your inbox. If you registered with Google, use Sign in with Google.
         </p>
         <p className="text-xs text-slate-400 mb-6">
           Didn&apos;t receive the email? Check your spam folder or{' '}

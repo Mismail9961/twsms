@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Menu, X, ArrowRight } from 'lucide-react'
+import { Menu, X, ArrowRight, ChevronRight } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth/session'
 
 interface LandingNavbarProps {
@@ -11,77 +11,118 @@ interface LandingNavbarProps {
   dashboardHref?: string
 }
 
-export function LandingNavbar({ user, dashboardHref = '/client' }: LandingNavbarProps) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+const navLinks = [
+  { label: 'Features', href: '#features' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'FAQ', href: '#faq' },
+  { label: 'Contact', href: '/contact' },
+]
 
-  const navLinks = [
-    { label: 'Features', href: '#features' },
-    { label: 'How It Works', href: '#how-it-works' },
-    { label: 'FAQ', href: '#faq' },
-  ]
+const focusRing =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2772]'
+
+export function LandingNavbar({ user, dashboardHref = '/client' }: LandingNavbarProps) {
+  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  // Deepen the header once the page scrolls
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Close the mobile menu with Escape
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  const renderLink = (
+    item: (typeof navLinks)[number],
+    className: string,
+    onClick?: () => void,
+    withChevron = false,
+  ) => {
+    const content = (
+      <>
+        <span>{item.label}</span>
+        {withChevron && <ChevronRight className="h-4 w-4 text-[#2C2772]/50" aria-hidden="true" />}
+      </>
+    )
+    return item.href.startsWith('/') ? (
+      <Link key={item.label} href={item.href} className={className} onClick={onClick}>
+        {content}
+      </Link>
+    ) : (
+      <a key={item.label} href={item.href} className={className} onClick={onClick}>
+        {content}
+      </a>
+    )
+  }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 p-1.5 shadow-sm">
-            <Image
-              src="/logo.png"
-              alt="Technology World"
-              width={32}
-              height={32}
-              className="h-full w-full object-contain"
-              priority
-            />
-          </div>
-          <div>
-            <span className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
-              Technology World
-            </span>
-            <span className="hidden text-xs text-slate-500 sm:block">
-              Support Management System
-            </span>
-          </div>
+    <header
+      className={`sticky top-0 z-50 w-full border-b bg-white/90 backdrop-blur-xl transition-shadow duration-300 motion-reduce:transition-none ${
+        scrolled
+          ? 'border-[#2C2772]/15 shadow-[0_8px_30px_-12px_rgba(44,39,114,0.25)]'
+          : 'border-[#2C2772]/10 shadow-none'
+      }`}
+    >
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-[72px] sm:px-6 lg:px-8">
+        {/* Brand logo */}
+        <Link
+          href="/"
+          aria-label="Technology World home"
+          className={`relative block h-10 w-[136px] shrink-0 rounded sm:h-11 sm:w-[150px] ${focusRing}`}
+        >
+          <Image
+            src="/logo.png"
+            alt="Technology World, Empowering the Technology"
+            fill
+            sizes="150px"
+            className="object-cover"
+            priority
+          />
         </Link>
 
-        {/* Desktop Nav Links */}
-        <nav className="hidden md:flex md:items-center md:gap-8">
-          {navLinks.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="text-sm font-medium text-slate-600 transition-colors hover:text-slate-950"
-            >
-              {item.label}
-            </a>
-          ))}
+        {/* Desktop links */}
+        <nav aria-label="Primary" className="hidden md:flex md:items-center md:gap-1">
+          {navLinks.map((item) =>
+            renderLink(
+              item,
+              `rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-[#2C2772]/[0.06] hover:text-[#2C2772] ${focusRing}`,
+            ),
+          )}
         </nav>
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex md:items-center md:gap-3">
+        {/* Desktop actions */}
+        <div className="hidden md:flex md:items-center md:gap-2">
           {user ? (
             <Link
               href={dashboardHref}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
+              className={`group inline-flex items-center gap-2 rounded-xl bg-[#2C2772] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#2C2772]/25 transition hover:bg-[#241f5e] ${focusRing}`}
             >
               <span>Go to Dashboard</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
             </Link>
           ) : (
             <>
               <Link
                 href="/login"
-                className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                className={`rounded-xl px-4 py-2.5 text-sm font-semibold text-[#2C2772] transition-colors hover:bg-[#2C2772]/[0.06] ${focusRing}`}
               >
                 Sign In
               </Link>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+                className={`group inline-flex items-center gap-2 rounded-xl bg-[#2C2772] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#2C2772]/25 transition hover:bg-[#241f5e] ${focusRing}`}
               >
                 <span>Get Started</span>
-                <ArrowRight className="h-3.5 w-3.5" />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
               </Link>
             </>
           )}
@@ -90,57 +131,65 @@ export function LandingNavbar({ user, dashboardHref = '/client' }: LandingNavbar
         {/* Mobile menu button */}
         <button
           type="button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 md:hidden"
-          aria-label="Toggle navigation menu"
+          onClick={() => setOpen((v) => !v)}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#2C2772]/15 text-[#2C2772] transition-colors hover:bg-[#2C2772]/[0.06] md:hidden ${focusRing}`}
+          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={open}
+          aria-controls="mobile-menu"
         >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
-      {/* Mobile dropdown */}
-      {mobileMenuOpen && (
-        <div className="border-t border-slate-200 bg-white px-4 py-5 shadow-lg md:hidden">
-          <nav className="flex flex-col gap-3">
-            {navLinks.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-sm font-medium text-slate-700 hover:text-blue-600"
-              >
-                {item.label}
-              </a>
-            ))}
-            <div className="my-2 border-t border-slate-100" />
-            {user ? (
+      {/* Mobile panel (overlays the page instead of pushing it down) */}
+      <div
+        id="mobile-menu"
+        className={`absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-[#2C2772]/10 bg-white px-4 pb-6 pt-2 shadow-2xl shadow-[#2C2772]/20 transition duration-200 motion-reduce:transition-none md:hidden ${
+          open ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0'
+        }`}
+      >
+        <nav aria-label="Mobile" className="flex flex-col">
+          {navLinks.map((item) =>
+            renderLink(
+              item,
+              `flex min-h-12 items-center justify-between border-b border-slate-100 text-[15px] font-medium text-slate-800 transition-colors hover:text-[#2C2772] ${focusRing}`,
+              () => setOpen(false),
+              true,
+            ),
+          )}
+        </nav>
+
+        <div className="mt-5 flex flex-col gap-2.5">
+          {user ? (
+            <Link
+              href={dashboardHref}
+              onClick={() => setOpen(false)}
+              className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#2C2772] px-4 text-sm font-semibold text-white ${focusRing}`}
+            >
+              <span>Go to Dashboard</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          ) : (
+            <>
               <Link
-                href={dashboardHref}
-                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white"
+                href="/signup"
+                onClick={() => setOpen(false)}
+                className={`flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#2C2772] px-4 text-sm font-semibold text-white shadow-md shadow-[#2C2772]/25 ${focusRing}`}
               >
-                <span>Go to Dashboard</span>
+                <span>Create Client Account</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/signup"
-                  className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
-                >
-                  <span>Create Client Account</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            )}
-          </nav>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className={`flex min-h-12 items-center justify-center rounded-xl border border-[#2C2772]/25 px-4 text-sm font-semibold text-[#2C2772] hover:bg-[#2C2772]/5 ${focusRing}`}
+              >
+                Sign In
+              </Link>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </header>
   )
 }

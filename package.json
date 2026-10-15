@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --require ./tests/register.cjs tests/email.test.cjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
@@ -34,7 +36,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "jose": "^6.2.12",
-    "lucide-react": "^1.55.0",
+    "lucide-react": "^1.57.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -43,6 +45,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.10",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

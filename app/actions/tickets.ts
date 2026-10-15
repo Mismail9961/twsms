@@ -1,9 +1,12 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { getTicketById } from '@/lib/data/tickets'
+import { emailQuery } from '@/lib/email/store'
 import { getSession } from '@/lib/auth/session'
 import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
 import {
@@ -28,11 +31,11 @@ const createTicketSchema = z.object({
 
 export type TicketActionState =
   | {
-      error?: string
-      errors?: Record<string, string[]>
-      success?: boolean
-      ticketId?: string
-    }
+    error?: string
+    errors?: Record<string, string[]>
+    success?: boolean
+    ticketId?: string
+  }
   | undefined
 
 export async function createTicket(
@@ -44,6 +47,11 @@ export async function createTicket(
 
   if (session.role !== 'client') {
     return { error: 'Only clients can submit technical support tickets.' }
+  }
+
+  if (isNeonConfigured()) {
+    const [profile] = await emailQuery<{ requires_email_verification: boolean }>('SELECT requires_email_verification FROM profiles WHERE id=$1', [session.id])
+    if (profile?.requires_email_verification) return { error: 'Verify your email at /verify-email before creating a ticket.' }
   }
 
   const raw = {
@@ -61,6 +69,9 @@ export async function createTicket(
     return { errors: result.error.flatten().fieldErrors as Record<string, string[]> }
   }
 
+  const suppliedKey = String(formData.get('request_key') || '')
+  if (suppliedKey && !z.string().uuid().safeParse(suppliedKey).success) return { error: 'Invalid request. Reload the form and try again.' }
+  const requestKey = suppliedKey || randomUUID()
   let ticketId = ''
 
   if (isNeonConfigured()) {
@@ -73,12 +84,13 @@ export async function createTicket(
         ticketNumber = `TW-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`
       }
 
-      let rows = await dbQuery<Ticket>(
+      let rows = await dbQuery<Ticket & { was_inserted: boolean }>(
         `INSERT INTO tickets (
           ticket_number, client_id, title, description, category_id,
-          priority, status, affected_service, serial_number, additional_info
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9)
-        RETURNING id`,
+          priority, status, affected_service, serial_number, additional_info, request_key
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, $10)
+        ON CONFLICT(client_id,request_key) DO UPDATE SET request_key=EXCLUDED.request_key
+        RETURNING id,(xmax=0) AS was_inserted`,
         [
           ticketNumber,
           session.id,
@@ -89,18 +101,20 @@ export async function createTicket(
           result.data.affected_service || null,
           result.data.serial_number || null,
           result.data.additional_info || null,
+          requestKey,
         ]
       )
 
       if (!rows || rows.length === 0) {
         // Fallback with timestamp-based unique ticket number
         const fallbackNum = `TW-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`
-        rows = await dbQuery<Ticket>(
+        rows = await dbQuery<Ticket & { was_inserted: boolean }>(
           `INSERT INTO tickets (
             ticket_number, client_id, title, description, category_id,
-            priority, status, affected_service, serial_number, additional_info
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9)
-          RETURNING id`,
+            priority, status, affected_service, serial_number, additional_info, request_key
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, $10)
+          ON CONFLICT(client_id,request_key) DO UPDATE SET request_key=EXCLUDED.request_key
+          RETURNING id,(xmax=0) AS was_inserted`,
           [
             fallbackNum,
             session.id,
@@ -111,6 +125,7 @@ export async function createTicket(
             result.data.affected_service || null,
             result.data.serial_number || null,
             result.data.additional_info || null,
+            requestKey,
           ]
         )
       }
@@ -121,20 +136,22 @@ export async function createTicket(
 
       ticketId = rows[0].id
 
-      // Status history
-      await dbQuery(
-        `INSERT INTO ticket_status_history (ticket_id, new_status, changed_by, change_note)
+      if (rows[0].was_inserted) {
+        // Status history
+        await dbQuery(
+          `INSERT INTO ticket_status_history (ticket_id, new_status, changed_by, change_note)
          VALUES ($1, 'open', $2, 'Ticket submitted by client')`,
-        [ticketId, session.id]
-      )
+          [ticketId, session.id]
+        )
 
-      // Notify Admins
-      await dbQuery(
-        `INSERT INTO notifications (recipient_id, ticket_id, notification_type, title, body)
+        // Notify Admins
+        await dbQuery(
+          `INSERT INTO notifications (recipient_id, ticket_id, notification_type, title, body)
          SELECT id, $1, 'ticket_created', 'New Ticket Submitted', $2
          FROM profiles WHERE role = 'admin'`,
-        [ticketId, `Ticket #${ticketNumber}: "${result.data.title}" submitted.`]
-      )
+          [ticketId, `Ticket #${ticketNumber}: "${result.data.title}" submitted.`]
+        )
+      }
     } catch (err) {
       console.error('[Create Ticket Neon Error]:', err)
       return { error: 'Failed to create ticket in database.' }
@@ -273,6 +290,11 @@ export async function assignEmployee(
     throw new Error('Only administrators can assign employees.')
   }
 
+  const employee = isNeonConfigured()
+    ? (await dbQuery<{ role: string; account_status: string }>('SELECT role,account_status FROM profiles WHERE id=$1', [employeeId]))[0]
+    : memoryDb.profiles.find(p => p.id === employeeId)
+  if (!employee || employee.role !== 'employee' || employee.account_status !== 'active' || !await getTicketById(ticketId, session)) throw new Error('Invalid assignment')
+
   const now = new Date().toISOString()
 
   if (isNeonConfigured()) {
@@ -381,6 +403,7 @@ export async function sendMessage(
     }
   }
 
+  if (!await getTicketById(ticketId, session)) throw new Error('Ticket not found or access denied')
   const now = new Date().toISOString()
   let saved: TicketMessage | undefined
 
@@ -520,13 +543,15 @@ export async function createEmployeeAccount(formData: FormData) {
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   const password = formData.get('password') as string
   const role = (formData.get('role') as string) || 'employee'
+  if (!['employee', 'admin'].includes(role) || !z.string().email().safeParse(email).success) throw new Error('Invalid account details')
   const department = (formData.get('department') as string)?.trim() || 'Technical Support'
 
   if (!fullName || !email || !password || password.length < 8) {
     throw new Error('All fields are required. Password must be at least 8 characters.')
   }
 
-  const passwordHash = await bcrypt.hash(password, 10)
+  if (Buffer.byteLength(password, 'utf8') > 72) throw new Error('Password must be at most 72 UTF-8 bytes.')
+  const passwordHash = await bcrypt.hash(password, 12)
   const now = new Date().toISOString()
 
   if (isNeonConfigured()) {
@@ -536,8 +561,8 @@ export async function createEmployeeAccount(formData: FormData) {
          VALUES ($1, $2, $3, $4, 'active', $5)`,
         [fullName, email, passwordHash, role, department]
       )
-    } catch (err) {
-      console.error('[createEmployeeAccount Neon Error]:', err)
+    } catch {
+      console.error('[createEmployeeAccount] Database write failed')
       throw new Error('Failed to create account. Email may already be in use.')
     }
   } else {

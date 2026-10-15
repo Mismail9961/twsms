@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { resetPassword } from '@/app/actions/auth'
 import type { AuthState } from '@/app/actions/auth'
@@ -8,6 +8,20 @@ import type { AuthState } from '@/app/actions/auth'
 const initialState: AuthState = undefined
 
 export default function ResetPasswordPage() {
+  const emailRef = useRef<HTMLInputElement>(null)
+  const tokenRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.slice(1))
+    if (emailRef.current && params.has('email')) {
+      emailRef.current.defaultValue = params.get('email') || ''
+      emailRef.current.value = emailRef.current.defaultValue
+    }
+    if (tokenRef.current && params.has('token')) {
+      tokenRef.current.defaultValue = params.get('token') || ''
+      tokenRef.current.value = tokenRef.current.defaultValue
+    }
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [])
   const [state, formAction, isPending] = useActionState(resetPassword, initialState)
 
   return (
@@ -26,6 +40,8 @@ export default function ResetPasswordPage() {
       )}
 
       <form action={formAction} className="space-y-4">
+        <input type="hidden" name="email" ref={emailRef} />
+        <input type="hidden" name="token" ref={tokenRef} />
         {/* New Password */}
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">

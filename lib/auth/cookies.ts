@@ -6,6 +6,7 @@ const DEV_FALLBACK_SECRET =
 
 export function getSessionSecretKey() {
   const secret = process.env.SESSION_SECRET?.trim()
+  if (process.env.NODE_ENV === 'production' && (!secret || secret.length < 32)) throw new Error('SESSION_SECRET must contain at least 32 characters')
   return new TextEncoder().encode(secret && secret.length >= 32 ? secret : DEV_FALLBACK_SECRET)
 }
 
