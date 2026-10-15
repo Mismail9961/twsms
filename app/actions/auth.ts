@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
-import { createSession, destroySession } from '@/lib/auth/session'
+import { createSession, destroySession, dashboardPathForRole } from '@/lib/auth/session'
 import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
 import type { Profile } from '@/lib/types'
 
@@ -117,12 +117,12 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
         passwordHash = rows[0].password_hash
       }
     } catch (err) {
-      console.warn('[Sign In DB Error, trying fallback]:', err)
+      console.error('[Sign In DB Error]:', err)
+      return { error: 'Unable to sign in right now. Please try again.' }
     }
   }
 
-  // Fallback if not found in Neon or during offline mode
-  if (!profile || !passwordHash) {
+  if (!isNeonConfigured() && (!profile || !passwordHash)) {
     const found = memoryDb.profiles.find((p) => p.email.toLowerCase() === data.email)
     if (found) {
       profile = found
@@ -145,18 +145,26 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
 
   await createSession(profile)
 
-  if (profile.role === 'admin') {
-    redirect('/admin')
-  } else if (profile.role === 'employee') {
-    redirect('/employee')
-  } else {
-    redirect('/client')
+  const from = (formData.get('from') as string)?.trim()
+  let destination = dashboardPathForRole(profile.role)
+
+  if (from && from.startsWith('/') && !from.startsWith('//') && !from.startsWith('/login') && !from.startsWith('/signup')) {
+    const isAllowed =
+      profile.role === 'admin' ||
+      (profile.role === 'employee' && !from.startsWith('/admin')) ||
+      (profile.role === 'client' && from.startsWith('/client'))
+
+    if (isAllowed) {
+      destination = from
+    }
   }
+
+  redirect(destination)
 }
 
 export async function signOut() {
   await destroySession()
-  redirect('/login')
+  redirect('/login?logged_out=true')
 }
 
 export async function forgotPassword(prevState: AuthState, formData: FormData): Promise<AuthState> {

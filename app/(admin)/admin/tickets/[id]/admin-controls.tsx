@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { UserPlus, Check, Loader2 } from 'lucide-react'
-import { assignEmployee, unassignEmployee, updateTicketStatus } from '@/app/actions/tickets'
+import { assignEmployee, updateTicketStatus } from '@/app/actions/tickets'
 import type { Profile, TicketStatus } from '@/lib/types'
 
 interface AdminControlsProps {

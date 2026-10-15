@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { Plus, Search, Filter, ArrowRight } from 'lucide-react'
+import { Plus, Search, ArrowRight } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
-import { getClientTickets, getCategories } from '@/lib/data/tickets'
+import { getClientTickets } from '@/lib/data/tickets'
 import { StatusBadge } from '@/components/tickets/status-badge'
 import { PriorityBadge } from '@/components/tickets/priority-badge'
 import { EmptyState } from '@/components/common/empty-state'
@@ -20,10 +20,7 @@ export default async function ClientTicketsPage({
   const priorityFilter = resolvedParams.priority || 'all'
   const searchQuery = resolvedParams.search || ''
 
-  const [allTickets, categories] = await Promise.all([
-    getClientTickets(session.id),
-    getCategories(),
-  ])
+  const allTickets = await getClientTickets(session.id)
 
   let filteredTickets = allTickets
 

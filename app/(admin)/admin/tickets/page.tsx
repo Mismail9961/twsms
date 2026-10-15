@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Search, Download, ArrowRight, UserCheck } from 'lucide-react'
+import { Search, Download, ArrowRight } from 'lucide-react'
 import { getAllTickets, getCategories } from '@/lib/data/tickets'
 import { StatusBadge } from '@/components/tickets/status-badge'
 import { PriorityBadge } from '@/components/tickets/priority-badge'
@@ -42,7 +42,7 @@ export default async function AdminTicketsPage({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
-            All Support Tickets
+            All Support Tickets ({total})
           </h2>
           <p className="text-sm text-gray-500">
             Global ticket queue management, employee assignment, and tracking

@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { createRemoteJWKSet, jwtVerify } from 'jose'
 import { NextResponse, type NextRequest } from 'next/server'
-import { createSession } from '@/lib/auth/session'
+import { applySessionCookie, dashboardPathForRole, encodeSessionToken } from '@/lib/auth/session'
 import { getGoogleOAuthConfig, GOOGLE_OAUTH_COOKIE } from '@/lib/auth/google'
 import { dbQuery, isNeonConfigured, memoryDb } from '@/lib/db'
 import type { Profile } from '@/lib/types'
@@ -100,7 +100,7 @@ async function getOrCreateProfile(googleProfile: GoogleProfile): Promise<Profile
 }
 
 export async function GET(request: NextRequest) {
-  const config = getGoogleOAuthConfig(request.url)
+  const config = getGoogleOAuthConfig(request)
   const rawState = request.cookies.get(GOOGLE_OAUTH_COOKIE)?.value
   let oauthState: OAuthState | undefined
 
@@ -171,15 +171,13 @@ export async function GET(request: NextRequest) {
       return response('inactive_account')
     }
 
-    await createSession(profile)
-    const destination =
-      profile.role === 'admin'
-        ? '/admin'
-        : profile.role === 'employee'
-          ? '/employee'
-          : '/client'
-
-    return clearOAuthCookie(NextResponse.redirect(new URL(destination, request.url)))
+    const token = await encodeSessionToken(profile)
+    const destination = dashboardPathForRole(profile.role)
+    const success = applySessionCookie(
+      NextResponse.redirect(new URL(destination, request.url)),
+      token
+    )
+    return clearOAuthCookie(success)
   } catch (error) {
     console.error('[Google Sign In Error]:', error)
     return response('failed')

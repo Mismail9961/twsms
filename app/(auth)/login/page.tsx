@@ -35,6 +35,9 @@ function LoginForm() {
   const [state, formAction, isPending] = useActionState(signIn, initialState)
   const searchParams = useSearchParams()
   const resetSuccess = searchParams.get('reset') === 'success'
+  const loggedOut = searchParams.get('logged_out') === 'true'
+  const sessionExpired = searchParams.get('expired') === 'true'
+  const fromParam = searchParams.get('from') || searchParams.get('redirect') || ''
   const [showPassword, setShowPassword] = useState(false)
 
   const emailError = state?.errors?.email?.[0]
@@ -63,6 +66,32 @@ function LoginForm() {
         </div>
       )}
 
+      {/* Logged out banner */}
+      {loggedOut && !state?.error && (
+        <div
+          role="status"
+          className="mb-5 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3 text-[13px] leading-snug text-slate-700"
+        >
+          <svg viewBox="0 0 20 20" className="mt-px h-4 w-4 shrink-0 text-slate-500" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.7-9.3a1 1 0 0 0-1.4-1.4L9 10.6 7.7 9.3a1 1 0 0 0-1.4 1.4l2 2a1 1 0 0 0 1.4 0l4-4Z" clipRule="evenodd" />
+          </svg>
+          <span>You have been signed out successfully.</span>
+        </div>
+      )}
+
+      {/* Session expired banner */}
+      {sessionExpired && !state?.error && (
+        <div
+          role="status"
+          className="mb-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] leading-snug text-amber-900"
+        >
+          <svg viewBox="0 0 20 20" className="mt-px h-4 w-4 shrink-0 text-amber-600" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-4a1 1 0 0 0-1 1v3a1 1 0 0 0 2 0V7a1 1 0 0 0-1-1Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+          </svg>
+          <span>Your session has expired. Please sign in again.</span>
+        </div>
+      )}
+
       {/* Error banner */}
       {state?.error && (
         <div
@@ -78,17 +107,8 @@ function LoginForm() {
 
       <GoogleAuthSection mode="login" />
 
-      {/* Divider */}
-      <div className="relative my-6" role="separator">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-slate-200" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-white px-3 text-xs text-slate-500">or sign in with email</span>
-        </div>
-      </div>
-
       <form action={formAction} className="space-y-4" noValidate={false}>
+        {fromParam && <input type="hidden" name="from" value={fromParam} />}
         {/* Email */}
         <div>
           <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-slate-700">

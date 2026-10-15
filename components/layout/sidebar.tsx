@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { signOut } from '@/app/actions/auth'
 import { cn, getInitials } from '@/lib/utils'
 import {
   LayoutDashboard,
@@ -76,7 +78,14 @@ function getRoleLabel(role: string): string {
 function TechWorldLogo() {
   return (
     <div className="flex h-12 w-full max-w-[11rem] items-center justify-center rounded-xl bg-white px-4 py-2 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.6)] ring-1 ring-white/30">
-      <img src="/logo.png" alt="Technology World" className="h-full w-full object-contain" />
+      <Image
+        src="/logo.png"
+        alt="Technology World"
+        width={140}
+        height={32}
+        className="h-full w-full object-contain"
+        priority
+      />
     </div>
   )
 }
@@ -179,9 +188,12 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
       <div className="relative border-t border-white/10 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
           {user.avatar_url ? (
-            <img
+            <Image
               src={user.avatar_url}
               alt=""
+              width={40}
+              height={40}
+              unoptimized
               className="h-10 w-10 shrink-0 rounded-full object-cover ring-2 ring-white/15"
             />
           ) : (
@@ -195,7 +207,7 @@ function SidebarContent({ user, unreadNotifications = 0, onClose, mobile = false
           </div>
         </div>
 
-        <form action="/api/auth/signout" method="POST" className="mt-3">
+        <form action={signOut} className="mt-3">
           <button
             type="submit"
             className={`group flex min-h-[44px] w-full items-center gap-2.5 rounded-lg border border-white/10 px-3 text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white ${focusRing}`}

@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Upload, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Send, AlertCircle } from 'lucide-react'
 import { createTicket } from '@/app/actions/tickets'
 import type { TicketActionState } from '@/app/actions/tickets'
 import type { TicketCategory } from '@/lib/types'

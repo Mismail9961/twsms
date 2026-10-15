@@ -289,7 +289,9 @@ class MemoryDb {
   }
 
   // Fallback query interface
-  async query<T = unknown>(_text: string, _params: unknown[] = []): Promise<T[]> {
+  async query<T = unknown>(_text?: string, _params?: unknown[]): Promise<T[]> {
+    void _text
+    void _params
     return [] as T[]
   }
 }

@@ -15,11 +15,14 @@ export async function GET(
 
   const { id } = await params
   const { searchParams } = new URL(request.url)
-  const roleParam = (searchParams.get('role') as Role) || session.role
+  const after = searchParams.get('after') || undefined
+  const before = searchParams.get('before') || undefined
+  const limitParam = searchParams.get('limit')
+  const limit = limitParam ? Math.min(parseInt(limitParam, 10), 100) : undefined
 
   // Security: always enforce user's actual session role
   const safeRole: Role = session.role === 'admin' ? 'admin' : session.role
 
-  const messages = await getTicketMessages(id, safeRole)
+  const messages = await getTicketMessages(id, safeRole, { after, before, limit })
   return NextResponse.json(messages)
 }

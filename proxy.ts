@@ -1,17 +1,29 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
+import {
+  SESSION_COOKIE,
+  clearSessionCookieOptions,
+  getSessionSecretKey,
+} from '@/lib/auth/cookies'
 
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.SESSION_SECRET || 'technology-world-sms-jwt-secret-key-32-chars-minimum-prod-2026'
-)
+const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/unauthorized']
 
-const COOKIE_NAME = 'twsms_session'
+function dashboardPath(role: string) {
+  if (role === 'admin') return '/admin'
+  if (role === 'employee') return '/employee'
+  return '/client'
+}
+
+function clearInvalidSession(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE, '', clearSessionCookieOptions())
+  response.cookies.delete(SESSION_COOKIE)
+  return response
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Ignore static assets and Next internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -21,13 +33,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Extract session token
-  const token = request.cookies.get(COOKIE_NAME)?.value
+  const rawToken = request.cookies.get(SESSION_COOKIE)?.value
+  const token = rawToken?.trim()
   let sessionUser: { id: string; role: string; email: string } | null = null
+  let tokenInvalid = false
 
-  if (token) {
+  if (token && token.length > 0) {
     try {
-      const { payload } = await jwtVerify(token, SECRET_KEY)
+      const { payload } = await jwtVerify(token, getSessionSecretKey())
       sessionUser = {
         id: payload.id as string,
         role: payload.role as string,
@@ -35,45 +48,38 @@ export async function proxy(request: NextRequest) {
       }
     } catch {
       sessionUser = null
+      tokenInvalid = true
     }
+  } else if (rawToken !== undefined) {
+    tokenInvalid = true
   }
 
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/unauthorized']
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
+  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
 
-  // Root path redirect
   if (pathname === '/') {
     if (!sessionUser) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      const response = NextResponse.redirect(new URL('/login', request.url))
+      return tokenInvalid ? clearInvalidSession(response) : response
     }
-    if (sessionUser.role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
-    if (sessionUser.role === 'employee') {
-      return NextResponse.redirect(new URL('/employee', request.url))
-    }
-    return NextResponse.redirect(new URL('/client', request.url))
+    return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
   }
 
-  // Protected routes require authentication
   if (!sessionUser && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+    if (pathname !== '/login') {
+      loginUrl.searchParams.set('from', pathname)
+    }
+    if (tokenInvalid) {
+      loginUrl.searchParams.set('expired', 'true')
+    }
+    const response = NextResponse.redirect(loginUrl)
+    return tokenInvalid ? clearInvalidSession(response) : response
   }
 
-  // Logged-in users navigating to login/signup are redirected to their dashboard
   if (sessionUser && isPublicRoute && pathname !== '/unauthorized') {
-    if (sessionUser.role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', request.url))
-    }
-    if (sessionUser.role === 'employee') {
-      return NextResponse.redirect(new URL('/employee', request.url))
-    }
-    return NextResponse.redirect(new URL('/client', request.url))
+    return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
   }
 
-  // Role-based access boundaries
   if (sessionUser) {
     if (pathname.startsWith('/admin') && sessionUser.role !== 'admin') {
       return NextResponse.redirect(new URL('/unauthorized', request.url))
@@ -82,12 +88,12 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
     if (pathname.startsWith('/client') && sessionUser.role !== 'client') {
-      if (sessionUser.role === 'admin') return NextResponse.redirect(new URL('/admin', request.url))
-      if (sessionUser.role === 'employee') return NextResponse.redirect(new URL('/employee', request.url))
+      return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
     }
   }
 
-  return NextResponse.next()
+  const response = NextResponse.next()
+  return tokenInvalid ? clearInvalidSession(response) : response
 }
 
 export const config = {

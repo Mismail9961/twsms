@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Image from 'next/image'
 
 const BRAND_NAME = 'Technology World'
 const BRAND_TAGLINE = 'Support & Ticket Management'
@@ -20,7 +21,14 @@ function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'xl'; onDark?: bo
             : 'border border-slate-200 shadow-[0_2px_6px_rgba(15,27,45,0.08)]'
         }`}
       >
-        <img src="/logo.png" alt={`${BRAND_NAME} logo`} className="h-full w-full object-contain" />
+        <Image
+          src="/logo.png"
+          alt={`${BRAND_NAME} logo`}
+          width={size === 'xl' ? 76 : 48}
+          height={size === 'xl' ? 76 : 48}
+          className="h-full w-full object-contain"
+          priority
+        />
       </div>
     </div>
   )

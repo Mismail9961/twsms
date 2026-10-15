@@ -5,7 +5,7 @@ import { getGoogleOAuthConfig, GOOGLE_OAUTH_COOKIE } from '@/lib/auth/google'
 export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get('mode')
   const returnPath = mode === 'signup' ? '/signup' : '/login'
-  const config = getGoogleOAuthConfig(request.url)
+  const config = getGoogleOAuthConfig(request)
 
   if (!config) {
     return NextResponse.redirect(new URL(`${returnPath}?googleError=not_configured`, request.url))

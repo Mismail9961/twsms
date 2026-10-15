@@ -1,12 +1,13 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import type { NextResponse } from 'next/server'
 import type { Profile, Role } from '@/lib/types'
-
-const SECRET_KEY = new TextEncoder().encode(
-  process.env.SESSION_SECRET || 'technology-world-sms-jwt-secret-key-32-chars-minimum-prod-2026'
-)
-
-const COOKIE_NAME = 'twsms_session'
+import {
+  SESSION_COOKIE,
+  clearSessionCookieOptions,
+  getSessionSecretKey,
+  sessionCookieOptions,
+} from '@/lib/auth/cookies'
 
 export interface SessionPayload {
   id: string
@@ -16,11 +17,8 @@ export interface SessionPayload {
   avatar_url?: string
 }
 
-/**
- * Creates an encrypted JWT session cookie valid for 7 days
- */
-export async function createSession(user: Profile) {
-  const token = await new SignJWT({
+export async function encodeSessionToken(user: Profile) {
+  return new SignJWT({
     id: user.id,
     email: user.email,
     role: user.role,
@@ -30,18 +28,28 @@ export async function createSession(user: Profile) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(SECRET_KEY)
+    .sign(getSessionSecretKey())
+}
 
+/**
+ * Creates an encrypted JWT session cookie valid for 7 days
+ */
+export async function createSession(user: Profile) {
+  const token = await encodeSessionToken(user)
   const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  })
-
+  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions())
   return token
+}
+
+export function applySessionCookie(response: NextResponse, token: string) {
+  response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions())
+  return response
+}
+
+export function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE, '', clearSessionCookieOptions())
+  response.cookies.delete(SESSION_COOKIE)
+  return response
 }
 
 /**
@@ -50,10 +58,10 @@ export async function createSession(user: Profile) {
 export async function getSession(): Promise<SessionPayload | null> {
   try {
     const cookieStore = await cookies()
-    const token = cookieStore.get(COOKIE_NAME)?.value
-    if (!token) return null
+    const token = cookieStore.get(SESSION_COOKIE)?.value
+    if (!token || token.trim().length === 0) return null
 
-    const { payload } = await jwtVerify(token, SECRET_KEY)
+    const { payload } = await jwtVerify(token, getSessionSecretKey())
     return {
       id: payload.id as string,
       email: payload.email as string,
@@ -71,7 +79,8 @@ export async function getSession(): Promise<SessionPayload | null> {
  */
 export async function destroySession() {
   const cookieStore = await cookies()
-  cookieStore.delete(COOKIE_NAME)
+  cookieStore.set(SESSION_COOKIE, '', clearSessionCookieOptions())
+  cookieStore.delete(SESSION_COOKIE)
 }
 
 /**
@@ -79,4 +88,10 @@ export async function destroySession() {
  */
 export async function getCurrentUser(): Promise<SessionPayload | null> {
   return getSession()
+}
+
+export function dashboardPathForRole(role: string) {
+  if (role === 'admin') return '/admin'
+  if (role === 'employee') return '/employee'
+  return '/client'
 }

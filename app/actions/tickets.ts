@@ -9,6 +9,7 @@ import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
 import {
   isTicketResolutionMethod,
   type Ticket,
+  type TicketMessage,
   type TicketStatus,
   type Priority,
   type MessageType,
@@ -363,7 +364,7 @@ export async function sendMessage(
   ticketId: string,
   messageBody: string,
   messageType: MessageType = 'client_message'
-) {
+): Promise<TicketMessage> {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
 
@@ -381,28 +382,30 @@ export async function sendMessage(
   }
 
   const now = new Date().toISOString()
+  let saved: TicketMessage | undefined
 
   if (isNeonConfigured()) {
-    try {
-      await dbQuery(
-        `INSERT INTO ticket_messages (ticket_id, sender_id, message_body, message_type)
-         VALUES ($1, $2, $3, $4)`,
-        [ticketId, session.id, trimmed, safeType]
-      )
-
-      await dbQuery('UPDATE tickets SET updated_at = NOW() WHERE id = $1', [ticketId])
-    } catch (err) {
-      console.error('[sendMessage Neon Error]:', err)
+    const rows = await dbQuery<TicketMessage>(
+      `INSERT INTO ticket_messages (ticket_id, sender_id, message_body, message_type)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, ticket_id, sender_id, message_body, message_type, created_at, edited_at`,
+      [ticketId, session.id, trimmed, safeType]
+    )
+    saved = rows[0]
+    if (!saved) {
+      throw new Error('The message could not be sent. Please try again.')
     }
+    await dbQuery('UPDATE tickets SET updated_at = NOW() WHERE id = $1', [ticketId])
   } else {
-    memoryDb.messages.push({
+    saved = {
       id: `msg-${Date.now()}`,
       ticket_id: ticketId,
       sender_id: session.id,
       message_body: trimmed,
       message_type: safeType,
       created_at: now,
-    })
+    }
+    memoryDb.messages.push(saved)
 
     const ticket = memoryDb.tickets.find((t) => t.id === ticketId)
     if (ticket) ticket.updated_at = now
@@ -411,6 +414,7 @@ export async function sendMessage(
   revalidatePath(`/client/tickets/${ticketId}`)
   revalidatePath(`/admin/tickets/${ticketId}`)
   revalidatePath(`/employee/tickets/${ticketId}`)
+  return saved
 }
 
 export async function confirmResolution(ticketId: string, confirmed: boolean) {

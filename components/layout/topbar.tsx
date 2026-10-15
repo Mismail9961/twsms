@@ -1,10 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Bell, Menu, User, LogOut, CheckCircle2 } from 'lucide-react'
+import { Bell, Menu, User, LogOut } from 'lucide-react'
 import { signOut } from '@/app/actions/auth'
 import { getInitials } from '@/lib/utils'
-import { isNeonConfigured } from '@/lib/db'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -102,11 +101,18 @@ export function Topbar({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => signOut()}
-              className="flex items-center gap-2 text-red-600 focus:text-red-600 cursor-pointer"
+              onSelect={(event) => event.preventDefault()}
+              className="p-0 text-red-600 focus:text-red-600"
             >
-              <LogOut className="h-4 w-4" />
-              <span>Sign Out</span>
+              <form action={signOut} className="w-full">
+                <button
+                  type="submit"
+                  className="flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-sm"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign Out</span>
+                </button>
+              </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

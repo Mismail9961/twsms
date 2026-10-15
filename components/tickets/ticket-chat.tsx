@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Send, Paperclip, Lock, FileText, CheckCheck, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Send, Lock, FileText, Loader2 } from 'lucide-react'
 import { sendMessage } from '@/app/actions/tickets'
 import { formatDateTime, getInitials, formatFileSize } from '@/lib/utils'
 import type { TicketMessage, Role, MessageType } from '@/lib/types'
@@ -13,6 +13,9 @@ interface TicketChatProps {
   initialMessages: TicketMessage[]
 }
 
+/** Polling interval in ms — 5 s keeps the chat responsive without hammering the server */
+const POLL_INTERVAL_MS = 5000
+
 export function TicketChat({
   ticketId,
   currentUserId,
@@ -23,34 +26,79 @@ export function TicketChat({
   const [inputText, setInputText] = useState('')
   const [isInternalNote, setIsInternalNote] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const pollingRef = useRef(true)
 
-  const scrollToBottom = () => {
+  // Keep a ref to the latest message list for the poll callback
+  const messagesRef = useRef(messages)
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
-  // Poll for new messages every 3 seconds for reliable real-time updates
+  // Sync with server-provided initialMessages when parent re-renders
+  const [prevInitial, setPrevInitial] = useState(initialMessages)
+  if (prevInitial !== initialMessages) {
+    setPrevInitial(initialMessages)
+    setMessages(initialMessages)
+  }
+
+  // Pause polling when browser tab is inactive / backgrounded
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/tickets/${ticketId}/messages?role=${userRole}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data) && data.length !== messages.length) {
-            setMessages(data)
-          }
-        }
-      } catch (e) {
-        // Silent fail on network hiccup
-      }
-    }, 3000)
+    const handleVisibility = () => {
+      pollingRef.current = document.visibilityState === 'visible'
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
-    return () => clearInterval(interval)
-  }, [ticketId, userRole, messages.length])
+  // Poll for new messages on a stable interval using after cursor
+  useEffect(() => {
+    let active = true
+
+    const poll = async () => {
+      if (!pollingRef.current) return
+      try {
+        const lastServerMsg = messagesRef.current.filter((m) => !m.id.startsWith('temp-')).pop()
+        const afterQuery = lastServerMsg?.created_at ? `&after=${encodeURIComponent(lastServerMsg.created_at)}` : ''
+
+        const res = await fetch(`/api/tickets/${ticketId}/messages?role=${userRole}${afterQuery}`, {
+          cache: 'no-store',
+        })
+        if (!active) return
+        if (res.ok) {
+          const data: TicketMessage[] = await res.json()
+          if (!Array.isArray(data) || data.length === 0) return
+
+          setMessages((prev) => {
+            const existingIds = new Set(prev.map((m) => m.id))
+            const newMsgs = data.filter((m) => !existingIds.has(m.id))
+            if (newMsgs.length === 0) return prev
+            return [...prev, ...newMsgs]
+          })
+        } else if (res.status === 401) {
+          // Session expired — stop polling to avoid spamming 401s
+          pollingRef.current = false
+        }
+      } catch {
+        // Silent fail on network hiccup — next interval will retry
+      }
+    }
+
+    const interval = setInterval(poll, POLL_INTERVAL_MS)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [ticketId, userRole])
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,6 +107,7 @@ export function TicketChat({
     const text = inputText.trim()
     setInputText('')
     setIsSending(true)
+    setSendError(null)
 
     const messageType: MessageType =
       userRole === 'client'
@@ -68,8 +117,9 @@ export function TicketChat({
         : 'staff_message'
 
     // Optimistic UI update
+    const optimisticId = `temp-${Date.now()}`
     const optimisticMessage: TicketMessage = {
-      id: `temp-${Date.now()}`,
+      id: optimisticId,
       ticket_id: ticketId,
       sender_id: currentUserId,
       message_body: text,
@@ -89,10 +139,21 @@ export function TicketChat({
     setMessages((prev) => [...prev, optimisticMessage])
 
     try {
-      await sendMessage(ticketId, text, messageType)
+      const saved = await sendMessage(ticketId, text, messageType)
+      // Replace optimistic message with the real server message
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === optimisticId
+            ? { ...optimisticMessage, id: saved.id, created_at: saved.created_at }
+            : m
+        )
+      )
       setIsInternalNote(false)
     } catch (err) {
       console.error('Failed to send message:', err)
+      // Remove the optimistic message on failure
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
+      setSendError('Message could not be sent. Please try again.')
     } finally {
       setIsSending(false)
     }
@@ -206,6 +267,10 @@ export function TicketChat({
 
       {/* Input Area */}
       <form onSubmit={handleSend} className="border-t border-gray-200 p-4 bg-gray-50/75 space-y-2">
+        {sendError && (
+          <p className="text-xs font-medium text-red-600 px-1">{sendError}</p>
+        )}
+
         {canPostInternalNotes && (
           <div className="flex items-center justify-between pb-1">
             <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
@@ -226,7 +291,7 @@ export function TicketChat({
           <input
             type="text"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => { setInputText(e.target.value); setSendError(null) }}
             disabled={isSending}
             placeholder={
               isInternalNote
