@@ -105,7 +105,7 @@ export function CreateTicketForm({ categories }: CreateTicketFormProps) {
           )}
         </div>
 
-        {/* Affected Service & Reference URL */}
+        {/* Affected Service & Serial Number */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="affected_service" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
@@ -122,49 +122,33 @@ export function CreateTicketForm({ categories }: CreateTicketFormProps) {
           </div>
 
           <div>
-            <label htmlFor="reference_url" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
-              Relevant URL or Endpoint (Optional)
+            <label htmlFor="serial_number" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+              Serial Number (Optional)
             </label>
             <input
-              id="reference_url"
-              name="reference_url"
-              type="url"
+              id="serial_number"
+              name="serial_number"
+              type="text"
               disabled={isPending}
-              placeholder="https://api.yourdomain.com/v1"
+              placeholder="Enter the product or device serial number"
               className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
         </div>
 
-        {/* Preferred Contact & Additional Info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="preferred_contact" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
-              Preferred Contact Method (Optional)
-            </label>
-            <input
-              id="preferred_contact"
-              name="preferred_contact"
-              type="text"
-              disabled={isPending}
-              placeholder="e.g. Slack channel #incident, Phone +1..."
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="additional_info" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
-              Additional Context / Notes (Optional)
-            </label>
-            <input
-              id="additional_info"
-              name="additional_info"
-              type="text"
-              disabled={isPending}
-              placeholder="e.g. Impacting 1,200 active enterprise users"
-              className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+        {/* Additional Info */}
+        <div>
+          <label htmlFor="additional_info" className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1.5">
+            Additional Context / Notes (Optional)
+          </label>
+          <input
+            id="additional_info"
+            name="additional_info"
+            type="text"
+            disabled={isPending}
+            placeholder="e.g. Impacting 1,200 active enterprise users"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
         </div>
 
         {/* Form Actions */}

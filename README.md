@@ -79,6 +79,8 @@ Do not commit environment files containing credentials or sensitive information 
 ### 4. Configure the Database
 
 Ensure the database schema is initialized and all required migrations have been applied.
+For an existing database, reapply `db/schema.sql` after pulling schema updates; it
+includes an idempotent migration that adds the ticket serial-number column.
 
 If the project uses Prisma, the following commands may be applicable:
 

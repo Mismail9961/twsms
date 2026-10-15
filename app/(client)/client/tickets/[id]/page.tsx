@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, ExternalLink, Paperclip, CheckCircle, RotateCcw, Star, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Paperclip, CheckCircle, RotateCcw, Star, ShieldCheck } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
 import {
   getTicketById,
@@ -134,6 +134,12 @@ export default async function ClientTicketDetailPage({
                 <span className="text-gray-400 block font-medium">Affected Service</span>
                 <span className="text-gray-900 font-semibold">{ticket.affected_service || 'None specified'}</span>
               </div>
+              {ticket.serial_number && (
+                <div>
+                  <span className="text-gray-400 block font-medium">Serial Number</span>
+                  <span className="text-gray-900 font-semibold">{ticket.serial_number}</span>
+                </div>
+              )}
               <div>
                 <span className="text-gray-400 block font-medium">Submitted On</span>
                 <span className="text-gray-900 font-semibold">{formatDate(ticket.created_at)}</span>
@@ -144,20 +150,6 @@ export default async function ClientTicketDetailPage({
               </div>
             </div>
 
-            {ticket.reference_url && (
-              <div className="pt-2 border-t border-gray-100">
-                <span className="text-xs text-gray-400 block font-medium mb-1">Reference URL</span>
-                <a
-                  href={ticket.reference_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-mono break-all"
-                >
-                  <span>{ticket.reference_url}</span>
-                  <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                </a>
-              </div>
-            )}
           </div>
 
           {/* Assigned Engineers Panel (Section 6) */}

@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   priority VARCHAR(50) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
   status VARCHAR(50) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'assigned', 'in_progress', 'waiting_for_client', 'waiting_for_support', 'resolved', 'closed')),
   affected_service VARCHAR(255),
+  serial_number VARCHAR(255),
   reference_url TEXT,
   preferred_contact VARCHAR(255),
   additional_info TEXT,
@@ -76,6 +77,8 @@ CREATE TABLE IF NOT EXISTS tickets (
   resolved_at TIMESTAMPTZ,
   closed_at TIMESTAMPTZ
 );
+
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS serial_number VARCHAR(255);
 
 CREATE INDEX IF NOT EXISTS idx_tickets_client ON tickets(client_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);

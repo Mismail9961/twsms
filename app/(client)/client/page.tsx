@@ -1,11 +1,68 @@
 import Link from 'next/link'
-import { Plus, Ticket as TicketIcon, Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
+import { Plus, ArrowRight, ChevronRight } from 'lucide-react'
 import { getSession } from '@/lib/auth/session'
 import { getClientTickets, getDashboardStats } from '@/lib/data/tickets'
 import { StatusBadge } from '@/components/tickets/status-badge'
 import { PriorityBadge } from '@/components/tickets/priority-badge'
 import { EmptyState } from '@/components/common/empty-state'
 import { formatDate, getInitials } from '@/lib/utils'
+
+type Ticket = Awaited<ReturnType<typeof getClientTickets>>[number]
+
+const focusRing =
+  'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F4FD8]/50 focus-visible:ring-offset-2'
+
+function Assignees({ assignments }: { assignments: Ticket['assignments'] }) {
+  if (!assignments || assignments.length === 0) {
+    return <span className="text-xs text-slate-400">Pending assignment</span>
+  }
+
+  const visible = assignments.slice(0, 3)
+  const extra = assignments.length - visible.length
+
+  return (
+    <div className="flex items-center -space-x-2">
+      {visible.map((asg) => (
+        <div
+          key={asg.id}
+          className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0F1B2D] text-[10px] font-semibold text-white ring-2 ring-white"
+          title={asg.employee?.full_name || 'Support agent'}
+        >
+          {getInitials(asg.employee?.full_name || 'TW')}
+        </div>
+      ))}
+      {extra > 0 && (
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600 ring-2 ring-white">
+          +{extra}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Stat({
+  label,
+  value,
+  dot,
+  className = '',
+}: {
+  label: string
+  value: number
+  dot: string
+  className?: string
+}) {
+  return (
+    <div className={`bg-white px-4 py-4 sm:px-5 sm:py-5 ${className}`}>
+      <div className="flex items-center gap-2">
+        <span className={`h-2 w-2 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
+        <span className="text-[13px] leading-tight text-slate-500">{label}</span>
+      </div>
+      <p className="mt-2.5 text-[26px] font-semibold leading-none tracking-tight text-slate-900 tabular-nums sm:text-3xl">
+        {value}
+      </p>
+    </div>
+  )
+}
 
 export default async function ClientDashboardPage() {
   const session = await getSession()
@@ -17,173 +74,173 @@ export default async function ClientDashboardPage() {
   ])
 
   const recentTickets = tickets.slice(0, 6)
+  const waiting = stats.waiting_for_client + stats.waiting_for_support
+  const resolved = stats.resolved + stats.closed
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 p-6 sm:p-8 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+    <div className="space-y-5 sm:space-y-7">
+      {/* Welcome banner */}
+      <section className="relative overflow-hidden rounded-2xl bg-[#0F1B2D] text-white shadow-[0_10px_30px_-12px_rgba(15,27,45,0.5)]">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#1F4FD8]/30 blur-3xl"
+          aria-hidden="true"
+        />
+
+        <div className="relative z-10 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:p-7 lg:p-8">
+          <div className="min-w-0">
+            <h1 className="break-words text-xl font-semibold leading-snug tracking-tight sm:text-2xl lg:text-3xl">
               Welcome back, {session.full_name}
-            </h2>
-            <p className="mt-1 text-sm text-blue-200">
-              Technology World Client Technical Support Portal
+            </h1>
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-300">
+              Technology World client support portal
             </p>
           </div>
+
           <Link
             href="/client/tickets/new"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg hover:bg-blue-500 transition-all active:scale-[0.98]"
+            className={`inline-flex min-h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-[#0F1B2D] shadow-sm transition-colors hover:bg-slate-100 active:bg-slate-200 sm:w-auto ${focusRing} focus-visible:ring-offset-[#0F1B2D]`}
           >
-            <Plus className="h-4 w-4" />
-            <span>Create New Ticket</span>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span>Create new ticket</span>
           </Link>
         </div>
-      </div>
+      </section>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between text-gray-500">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Tickets</span>
-            <TicketIcon className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</div>
+      {/* Metrics */}
+      <section aria-label="Ticket summary">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 shadow-sm sm:grid-cols-5">
+          <Stat label="Total tickets" value={stats.total} dot="bg-[#0F1B2D]" className="col-span-2 sm:col-span-1" />
+          <Stat label="Open" value={stats.open} dot="bg-sky-500" />
+          <Stat label="In progress" value={stats.in_progress} dot="bg-amber-500" />
+          <Stat label="Waiting response" value={waiting} dot="bg-orange-500" />
+          <Stat label="Resolved" value={resolved} dot="bg-emerald-500" />
         </div>
+      </section>
 
-        <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 shadow-sm">
-          <div className="flex items-center justify-between text-blue-700">
-            <span className="text-xs font-semibold uppercase tracking-wider">Open</span>
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="mt-3 text-2xl sm:text-3xl font-bold text-blue-900">{stats.open}</div>
-        </div>
-
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
-          <div className="flex items-center justify-between text-amber-700">
-            <span className="text-xs font-semibold uppercase tracking-wider">In Progress</span>
-            <Clock className="h-4 w-4 text-amber-600" />
-          </div>
-          <div className="mt-3 text-2xl sm:text-3xl font-bold text-amber-900">{stats.in_progress}</div>
-        </div>
-
-        <div className="rounded-2xl border border-orange-200 bg-orange-50/50 p-5 shadow-sm">
-          <div className="flex items-center justify-between text-orange-700">
-            <span className="text-xs font-semibold uppercase tracking-wider">Waiting Response</span>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </div>
-          <div className="mt-3 text-2xl sm:text-3xl font-bold text-orange-900">
-            {stats.waiting_for_client + stats.waiting_for_support}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5 shadow-sm col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-emerald-700">
-            <span className="text-xs font-semibold uppercase tracking-wider">Resolved</span>
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          </div>
-          <div className="mt-3 text-2xl sm:text-3xl font-bold text-emerald-900">
-            {stats.resolved + stats.closed}
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Tickets Section */}
-      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <div>
-            <h3 className="font-semibold text-gray-900">Recent Support Requests</h3>
-            <p className="text-xs text-gray-500">Track and manage your submitted technical issues</p>
+      {/* Recent tickets */}
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Recent support requests</h2>
+            <p className="mt-0.5 text-[13px] text-slate-500">Track the technical issues you have submitted</p>
           </div>
           <Link
             href="/client/tickets"
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            className={`inline-flex min-h-[36px] items-center gap-1 rounded-md text-[13px] font-semibold text-[#1F4FD8] transition-colors hover:text-[#183CA8] ${focusRing}`}
           >
-            <span>View All Tickets</span>
-            <ArrowRight className="h-3.5 w-3.5" />
+            <span>View all tickets</span>
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
 
         {recentTickets.length === 0 ? (
           <EmptyState
             title="No tickets yet"
-            description="You have not submitted any technical support requests. Click below to submit your first issue."
+            description="You have not submitted any technical support requests. Create your first ticket to get started."
             action={{
-              label: 'Create Your First Ticket',
+              label: 'Create your first ticket',
               href: '/client/tickets/new',
             }}
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/75 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
-                  <th className="py-3.5 px-6">Ticket ID</th>
-                  <th className="py-3.5 px-6">Subject</th>
-                  <th className="py-3.5 px-6">Category</th>
-                  <th className="py-3.5 px-6">Priority</th>
-                  <th className="py-3.5 px-6">Status</th>
-                  <th className="py-3.5 px-6">Assigned Team</th>
-                  <th className="py-3.5 px-6">Updated</th>
-                  <th className="py-3.5 px-6 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-sm">
-                {recentTickets.map((ticket) => (
-                  <tr key={ticket.id} className="hover:bg-gray-50/75 transition-colors group">
-                    <td className="py-4 px-6 font-mono text-xs font-semibold text-blue-600">
-                      {ticket.ticket_number}
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="font-medium text-gray-900 max-w-xs truncate" title={ticket.title}>
-                        {ticket.title}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6 text-xs text-gray-600">
-                      {ticket.category?.name || 'Technical'}
-                    </td>
-                    <td className="py-4 px-6">
-                      <PriorityBadge priority={ticket.priority} />
-                    </td>
-                    <td className="py-4 px-6">
+          <>
+            {/* Phone and small tablet: stacked list */}
+            <ul className="divide-y divide-slate-100 md:hidden">
+              {recentTickets.map((ticket) => (
+                <li key={ticket.id}>
+                  <Link
+                    href={`/client/tickets/${ticket.id}`}
+                    className="block px-4 py-4 transition-colors active:bg-slate-50 focus:outline-none focus-visible:bg-slate-50 sm:px-6"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="font-mono text-xs font-semibold text-slate-500">{ticket.ticket_number}</span>
                       <StatusBadge status={ticket.status} />
-                    </td>
-                    <td className="py-4 px-6">
-                      {ticket.assignments && ticket.assignments.length > 0 ? (
-                        <div className="flex items-center -space-x-1.5">
-                          {ticket.assignments.map((asg) => (
-                            <div
-                              key={asg.id}
-                              className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white ring-2 ring-white"
-                              title={asg.employee?.full_name || 'Support Agent'}
-                            >
-                              {getInitials(asg.employee?.full_name || 'TW')}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">Pending Assignment</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-6 text-xs text-gray-500 whitespace-nowrap">
-                      {formatDate(ticket.updated_at)}
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <Link
-                        href={`/client/tickets/${ticket.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        <span>Details</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
-                    </td>
+                    </div>
+
+                    <div className="mt-2 flex items-start justify-between gap-3">
+                      <p className="line-clamp-2 min-w-0 break-words text-[15px] font-medium leading-snug text-slate-900">
+                        {ticket.title}
+                      </p>
+                      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" aria-hidden="true" />
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <PriorityBadge priority={ticket.priority} />
+                      <span className="text-xs text-slate-500">{ticket.category?.name || 'Technical'}</span>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-3">
+                      <Assignees assignments={ticket.assignments} />
+                      <span className="whitespace-nowrap text-xs text-slate-400">
+                        Updated {formatDate(ticket.updated_at)}
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            {/* Tablet and desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/80 text-xs font-medium text-slate-500">
+                    <th scope="col" className="px-6 py-3 font-medium">Ticket</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Subject</th>
+                    <th scope="col" className="hidden px-4 py-3 font-medium xl:table-cell">Category</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Priority</th>
+                    <th scope="col" className="px-4 py-3 font-medium">Status</th>
+                    <th scope="col" className="hidden px-4 py-3 font-medium lg:table-cell">Assigned team</th>
+                    <th scope="col" className="px-6 py-3 font-medium">Updated</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {recentTickets.map((ticket) => (
+                    <tr key={ticket.id} className="transition-colors hover:bg-slate-50/80">
+                      <td className="whitespace-nowrap px-6 py-4 font-mono text-xs font-semibold text-slate-500">
+                        {ticket.ticket_number}
+                      </td>
+                      <td className="px-4 py-4">
+                        <Link
+                          href={`/client/tickets/${ticket.id}`}
+                          className={`block max-w-[16rem] truncate rounded font-medium text-slate-900 transition-colors hover:text-[#1F4FD8] lg:max-w-xs ${focusRing}`}
+                          title={ticket.title}
+                        >
+                          {ticket.title}
+                        </Link>
+                      </td>
+                      <td className="hidden px-4 py-4 text-[13px] text-slate-600 xl:table-cell">
+                        {ticket.category?.name || 'Technical'}
+                      </td>
+                      <td className="px-4 py-4">
+                        <PriorityBadge priority={ticket.priority} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge status={ticket.status} />
+                      </td>
+                      <td className="hidden px-4 py-4 lg:table-cell">
+                        <Assignees assignments={ticket.assignments} />
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-[13px] text-slate-500">
+                        {formatDate(ticket.updated_at)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
-      </div>
+      </section>
     </div>
   )
 }

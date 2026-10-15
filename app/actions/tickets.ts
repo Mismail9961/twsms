@@ -14,8 +14,7 @@ const createTicketSchema = z.object({
   category_id: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']),
   affected_service: z.string().optional(),
-  reference_url: z.string().url().optional().or(z.literal('')),
-  preferred_contact: z.string().optional(),
+  serial_number: z.string().max(255, 'Serial number must be 255 characters or fewer').optional(),
   additional_info: z.string().optional(),
 })
 
@@ -45,8 +44,7 @@ export async function createTicket(
     category_id: (formData.get('category_id') as string) || undefined,
     priority: (formData.get('priority') as string) as Priority,
     affected_service: (formData.get('affected_service') as string)?.trim() || undefined,
-    reference_url: (formData.get('reference_url') as string)?.trim() || undefined,
-    preferred_contact: (formData.get('preferred_contact') as string)?.trim() || undefined,
+    serial_number: (formData.get('serial_number') as string)?.trim() || undefined,
     additional_info: (formData.get('additional_info') as string)?.trim() || undefined,
   }
 
@@ -70,9 +68,8 @@ export async function createTicket(
       let rows = await dbQuery<Ticket>(
         `INSERT INTO tickets (
           ticket_number, client_id, title, description, category_id,
-          priority, status, affected_service, reference_url,
-          preferred_contact, additional_info
-        ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, $10)
+          priority, status, affected_service, serial_number, additional_info
+        ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9)
         RETURNING id`,
         [
           ticketNumber,
@@ -82,8 +79,7 @@ export async function createTicket(
           result.data.category_id || null,
           result.data.priority,
           result.data.affected_service || null,
-          result.data.reference_url || null,
-          result.data.preferred_contact || null,
+          result.data.serial_number || null,
           result.data.additional_info || null,
         ]
       )
@@ -94,9 +90,8 @@ export async function createTicket(
         rows = await dbQuery<Ticket>(
           `INSERT INTO tickets (
             ticket_number, client_id, title, description, category_id,
-            priority, status, affected_service, reference_url,
-            preferred_contact, additional_info
-          ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9, $10)
+            priority, status, affected_service, serial_number, additional_info
+          ) VALUES ($1, $2, $3, $4, $5, $6, 'open', $7, $8, $9)
           RETURNING id`,
           [
             fallbackNum,
@@ -106,8 +101,7 @@ export async function createTicket(
             result.data.category_id || null,
             result.data.priority,
             result.data.affected_service || null,
-            result.data.reference_url || null,
-            result.data.preferred_contact || null,
+            result.data.serial_number || null,
             result.data.additional_info || null,
           ]
         )
@@ -152,8 +146,7 @@ export async function createTicket(
       priority: result.data.priority,
       status: 'open',
       affected_service: result.data.affected_service,
-      reference_url: result.data.reference_url,
-      preferred_contact: result.data.preferred_contact,
+      serial_number: result.data.serial_number,
       additional_info: result.data.additional_info,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

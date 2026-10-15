@@ -50,6 +50,7 @@ export interface Ticket {
   priority: Priority
   status: TicketStatus
   affected_service?: string
+  serial_number?: string
   reference_url?: string
   preferred_contact?: string
   additional_info?: string
