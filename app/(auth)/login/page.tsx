@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { signIn } from '@/app/actions/auth'
 import type { AuthState } from '@/app/actions/auth'
+import GoogleAuthSection from '@/components/auth/google-auth-section'
 
 const initialState: AuthState = undefined
 
@@ -39,6 +40,8 @@ function LoginForm() {
           {state.error}
         </div>
       )}
+
+      <GoogleAuthSection mode="login" />
 
       <form action={formAction} className="space-y-4">
         {/* Email */}

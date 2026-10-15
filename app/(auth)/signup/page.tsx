@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import Link from 'next/link'
 import { signUp } from '@/app/actions/auth'
 import type { AuthState } from '@/app/actions/auth'
+import GoogleAuthSection from '@/components/auth/google-auth-section'
 
 const initialState: AuthState = undefined
 
@@ -28,6 +29,8 @@ export default function SignupPage() {
           {state.error}
         </div>
       )}
+
+      <GoogleAuthSection mode="signup" />
 
       <form action={formAction} className="space-y-4">
         {/* Full Name */}

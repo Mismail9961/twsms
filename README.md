@@ -58,13 +58,21 @@ npm install
 
 ### 3. Configure Environment Variables
 
-Create a `.env.local` file in the project root and configure the database connection:
+Create a `.env.local` file in the project root and configure the database connection and Google OAuth credentials:
 
 ```env
 DATABASE_URL="your_neon_postgresql_connection_string"
+GOOGLE_CLIENT_ID="your_google_oauth_client_id"
+GOOGLE_CLIENT_SECRET="your_google_oauth_client_secret"
+# Optional when the app's public origin cannot be inferred from the request:
+# GOOGLE_REDIRECT_URI="http://localhost:3000/api/auth/google/callback"
 ```
 
-Replace the placeholder with the connection string obtained from your Neon dashboard.
+Create a **Web application** OAuth client in Google Cloud Console. Add
+`http://localhost:3000/api/auth/google/callback` and your production
+`https://your-domain/api/auth/google/callback` as authorized redirect URIs. Set
+`GOOGLE_REDIRECT_URI` only when it differs from the callback URL inferred from the
+request origin. Use the same exact URL in Google Cloud Console and this setting.
 
 Do not commit environment files containing credentials or sensitive information to version control.
 
@@ -126,6 +134,9 @@ Database access should be performed securely through server-side application log
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | Connection string for the Neon PostgreSQL database |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 client ID for Google sign-in |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 client secret for the server-side authorization-code exchange |
+| `GOOGLE_REDIRECT_URI` | Optional exact callback URL; defaults to `/api/auth/google/callback` on the request origin |
 
 Additional environment variables may be required for authentication, email delivery, file storage, or other integrations.
 
