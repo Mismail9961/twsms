@@ -1,6 +1,11 @@
+import { revalidatePath } from 'next/cache'
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
-import { getTicketAttachmentContent, getTicketById } from '@/lib/data/tickets'
+import {
+  deleteClientTicketAttachment,
+  getTicketAttachmentContent,
+  getTicketById,
+} from '@/lib/data/tickets'
 
 function safeContentType(mimeType: string): string {
   return /^[\w.+-]+\/[\w.+-]+$/.test(mimeType)
@@ -56,5 +61,41 @@ export async function GET(
   } catch (error) {
     console.error('[Ticket attachment download error]:', error)
     return NextResponse.json({ error: 'The file could not be downloaded.' }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: 'Please sign in to delete this file.' }, { status: 401 })
+  }
+  if (session.role !== 'client') {
+    return NextResponse.json(
+      { error: 'Only clients can delete shared files.' },
+      { status: 403 }
+    )
+  }
+
+  const { id } = await params
+
+  try {
+    const deleted = await deleteClientTicketAttachment(id, session.id)
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'File not found or you do not have permission to delete it.' },
+        { status: 404 }
+      )
+    }
+
+    revalidatePath(`/client/tickets/${deleted.ticketId}`)
+    revalidatePath(`/employee/tickets/${deleted.ticketId}`)
+    revalidatePath(`/admin/tickets/${deleted.ticketId}`)
+    return NextResponse.json({ deleted: true })
+  } catch (error) {
+    console.error('[Ticket attachment delete error]:', error)
+    return NextResponse.json({ error: 'The file could not be deleted.' }, { status: 500 })
   }
 }

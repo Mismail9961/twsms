@@ -196,7 +196,12 @@ export default async function ClientTicketDetailPage({
             )}
           </div>
 
-          <SharedDocuments ticketId={ticket.id} initialAttachments={attachments} />
+          <SharedDocuments
+            ticketId={ticket.id}
+            initialAttachments={attachments}
+            currentUserId={session.id}
+            userRole={session.role}
+          />
 
           {/* Ticket Activity History (Section 7) */}
           <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">

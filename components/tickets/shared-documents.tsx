@@ -1,21 +1,37 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertCircle, Download, FileText, Loader2, Paperclip, Upload } from 'lucide-react'
+import {
+  AlertCircle,
+  Download,
+  FileText,
+  Loader2,
+  Paperclip,
+  Trash2,
+  Upload,
+} from 'lucide-react'
 import { formatDateTime, formatFileSize } from '@/lib/utils'
-import type { TicketAttachment } from '@/lib/types'
+import type { Role, TicketAttachment } from '@/lib/types'
 
 const MAX_FILE_SIZE = 4 * 1024 * 1024
 
 interface SharedDocumentsProps {
   ticketId: string
   initialAttachments: TicketAttachment[]
+  currentUserId: string
+  userRole: Role
 }
 
-export function SharedDocuments({ ticketId, initialAttachments }: SharedDocumentsProps) {
+export function SharedDocuments({
+  ticketId,
+  initialAttachments,
+  currentUserId,
+  userRole,
+}: SharedDocumentsProps) {
   const [attachments, setAttachments] = useState(initialAttachments)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState('')
   const [uploadStatus, setUploadStatus] = useState('')
   const [error, setError] = useState('')
 
@@ -75,6 +91,43 @@ export function SharedDocuments({ ticketId, initialAttachments }: SharedDocument
       setUploadStatus('')
     } finally {
       setIsUploading(false)
+    }
+  }
+
+  const handleDelete = async (attachment: TicketAttachment) => {
+    if (
+      deletingAttachmentId ||
+      !window.confirm(`Delete "${attachment.original_filename}" from this ticket?`)
+    ) {
+      return
+    }
+
+    setDeletingAttachmentId(attachment.id)
+    setError('')
+    setUploadStatus('')
+
+    try {
+      const response = await fetch(`/api/attachments/${attachment.id}`, {
+        method: 'DELETE',
+      })
+      const result = (await response.json().catch(() => null)) as
+        | { error?: string }
+        | null
+
+      if (!response.ok) {
+        throw new Error(result?.error || 'The file could not be deleted. Please try again.')
+      }
+
+      setAttachments((current) => current.filter((item) => item.id !== attachment.id))
+      setUploadStatus('File deleted successfully.')
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'The file could not be deleted. Please try again.'
+      )
+    } finally {
+      setDeletingAttachmentId('')
     }
   }
 
@@ -160,27 +213,45 @@ export function SharedDocuments({ ticketId, initialAttachments }: SharedDocument
         <ul className="space-y-2">
           {attachments.map((attachment) => (
             <li key={attachment.id}>
-              <a
-                href={`/api/attachments/${attachment.id}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/50"
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <FileText className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-xs font-semibold text-gray-900">
-                      {attachment.original_filename}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-gray-500">
-                      {formatFileSize(attachment.file_size)}
-                      {attachment.uploader?.full_name
-                        ? ` · Shared by ${attachment.uploader.full_name}`
-                        : ''}
-                      {` · ${formatDateTime(attachment.created_at)}`}
+              <div className="flex items-center gap-2 rounded-xl border border-gray-200 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/50">
+                <a
+                  href={`/api/attachments/${attachment.id}`}
+                  className="flex min-w-0 flex-1 items-center justify-between gap-3"
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <FileText className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-semibold text-gray-900">
+                        {attachment.original_filename}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-gray-500">
+                        {formatFileSize(attachment.file_size)}
+                        {attachment.uploader?.full_name
+                          ? ` · Shared by ${attachment.uploader.full_name}`
+                          : ''}
+                        {` · ${formatDateTime(attachment.created_at)}`}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <Download className="h-4 w-4 shrink-0 text-gray-400" aria-label="Download" />
-              </a>
+                  <Download className="h-4 w-4 shrink-0 text-gray-400" aria-label="Download" />
+                </a>
+                {userRole === 'client' && attachment.uploader_id === currentUserId && (
+                  <button
+                    type="button"
+                    disabled={Boolean(deletingAttachmentId)}
+                    onClick={() => void handleDelete(attachment)}
+                    aria-label={`Delete ${attachment.original_filename}`}
+                    title="Delete your shared file"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deletingAttachmentId === attachment.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

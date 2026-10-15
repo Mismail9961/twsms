@@ -24,7 +24,7 @@ The system is intended to support the following capabilities, depending on the c
 - Ticket status and priority tracking.
 - Support team and user management.
 - Assignment and tracking of support requests.
-- Secure document and file sharing on tickets (4 MB per file).
+- Secure document and file sharing on tickets (4 MB per file), with client deletion for files they uploaded.
 - Centralized database management.
 - Responsive user interface for desktop and mobile devices.
 - Scalable architecture for future feature development.

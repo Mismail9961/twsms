@@ -577,6 +577,41 @@ export async function getTicketAttachmentContent(attachmentId: string): Promise<
   }
 }
 
+export async function deleteClientTicketAttachment(
+  attachmentId: string,
+  clientId: string
+): Promise<{ id: string; ticketId: string } | null> {
+  if (isNeonConfigured()) {
+    const rows = await dbQuery<{ id: string; ticket_id: string }>(
+      `DELETE FROM ticket_attachments a
+       USING tickets t
+       WHERE a.ticket_id = t.id
+         AND a.id = $1
+         AND a.uploader_id = $2
+         AND t.client_id = $2
+       RETURNING a.id, a.ticket_id`,
+      [attachmentId, clientId]
+    )
+
+    const deleted = rows[0]
+    return deleted ? { id: deleted.id, ticketId: deleted.ticket_id } : null
+  }
+
+  const attachmentIndex = memoryDb.attachments.findIndex(
+    (attachment) =>
+      attachment.id === attachmentId &&
+      attachment.uploader_id === clientId &&
+      memoryDb.tickets.some(
+        (ticket) => ticket.id === attachment.ticket_id && ticket.client_id === clientId
+      )
+  )
+  if (attachmentIndex < 0) return null
+
+  const [deleted] = memoryDb.attachments.splice(attachmentIndex, 1)
+  memoryDb.attachmentFiles.delete(deleted.id)
+  return { id: deleted.id, ticketId: deleted.ticket_id }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATIONS
 // ─────────────────────────────────────────────────────────────────────────────
