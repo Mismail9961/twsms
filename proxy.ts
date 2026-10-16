@@ -16,6 +16,8 @@ const PUBLIC_ROUTES = [
   '/unauthorized',
   '/contact',
   '/contact-us',
+  '/privacy',
+  '/terms',
 ]
 
 function dashboardPath(role: string) {

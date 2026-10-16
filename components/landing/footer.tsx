@@ -36,9 +36,9 @@ function LinkedinIcon({ className }: IconProps) {
 const WEBSITE = 'https://technology-world.net.pk/#'
 
 const navigate = [
-  { label: 'Features', href: '#features' },
-  { label: 'How It Works', href: '#how-it-works' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Features', href: '/#features' },
+  { label: 'How It Works', href: '/#how-it-works' },
+  { label: 'FAQ', href: '/#faq' },
   { label: 'Contact Us', href: '/contact' },
   { label: 'Portal Sign In', href: '/login' },
 ]
