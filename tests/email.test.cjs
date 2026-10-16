@@ -2,14 +2,14 @@ const { test, before, after } = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const { PGlite } = require('@electric-sql/pglite')
-let db, sessionToken, failVerificationQuery = false, createdSessions = 0, sent = []
+let db, sessionToken, failVerificationQuery = false, createdSessions = 0, failSessionCreation = false, sent = []
 const fake = (name, exports) => { const id = require.resolve(name); require.cache[id] = { id, filename: id, loaded: true, exports } }
 fake('@/lib/email/store.ts', { emailQuery: async (sql, params = []) => { try { if (failVerificationQuery && sql.includes('SELECT requires_email_verification FROM profiles')) throw Object.assign(new Error('Missing schema column'), { code: '42703' }); return (await db.query(sql, params)).rows } catch (error) { console.error('Test SQL error:', error.message); throw error } } })
 fake('next/headers', { headers: async () => new Headers({ 'x-forwarded-for': 'test-proxy' }), cookies: async () => ({ set() { }, delete() { }, get() { return sessionToken ? { value: sessionToken } : undefined } }) })
 fake('next/navigation', { redirect: (url) => { throw new Error(`REDIRECT:${url}`) } })
 fake('next/cache', { revalidatePath() { } })
 let session
-fake('@/lib/auth/session.ts', { getSession: async () => session, createSession: async () => { createdSessions++ }, destroySession: async () => { }, dashboardPathForRole: r => `/${r}` })
+fake('@/lib/auth/session.ts', { getSession: async () => session, createSession: async () => { if (failSessionCreation) throw new Error("Session unavailable"); createdSessions++ }, destroySession: async () => { }, dashboardPathForRole: r => `/${r}` })
 fake('@/lib/db', { isNeonConfigured: () => true, dbQuery: async (sql, params = []) => (await db.query(sql, params)).rows })
 const security = require('../lib/email/security.ts')
 const { template } = require('../lib/email/templates.ts')
@@ -39,6 +39,7 @@ before(async () => {
   // A legacy user is inserted before the migration to verify compatibility.
   await db.exec("INSERT INTO profiles(full_name,email,password_hash) VALUES ('Legacy','legacy@example.com','hash')")
   await db.exec(fs.readFileSync('db/migrations/001_email_auth.sql', 'utf8'))
+  await db.exec(fs.readFileSync('db/migrations/002_auth_email_uniqueness.sql', 'utf8'))
   smtpSend = async options => {
     sent.push(options.raw)
     return { messageId: `smtp-${sent.length}`, accepted: options.envelope.to, rejected: [] }
@@ -242,6 +243,7 @@ test('chat cooldown defers later unread messages and releases them after cooldow
 test('a message arriving during SMTP submission remains eligible for a later reminder', async () => {
   const sendBefore = smtpSend
   let injected = false
+  await db.exec(fs.readFileSync('db/migrations/002_auth_email_uniqueness.sql', 'utf8'))
   smtpSend = async options => {
     if (!injected) {
       injected = true
@@ -323,6 +325,7 @@ test('migration runner installs legacy schema atomically and is safe to run agai
     const source = fs.readFileSync('db/migrations/001_email_auth.sql', 'utf8')
     assert.equal(await applyMigration(client, '001_email_auth.sql', source), 'applied')
     assert.equal(await applyMigration(client, '001_email_auth.sql', source), 'already applied')
+    await applyMigration(client, '002_auth_email_uniqueness.sql', fs.readFileSync('db/migrations/002_auth_email_uniqueness.sql', 'utf8'))
     const checks = await client.query(schemaCheckSql)
     assert.ok(checks.every(check => check.present))
     await assert.rejects(applyMigration(client, '001_email_auth.sql', source + '\n-- edited'), /has changed/)
@@ -411,4 +414,24 @@ test('four-digit verification templates highlight the code and include a plain-t
   assert.ok(mail.text.includes('2026-10-16 12:05:00 UTC'))
   assert.throws(() => template('verify', 'Client', '', 'https://example.com', { code: '<bad>', expiresAt: '2026-10-16T12:05:00Z' }))
   assert.notEqual(security.challengeDigest('0007', 'verify', 'one@example.com'), security.challengeDigest('0007', 'verify', 'two@example.com'))
+})
+
+
+test('signup session failure is recoverable and preserves the registered account', async () => {
+  failSessionCreation = true
+  try {
+    const state = await auth.signUp(undefined, form({ full_name: 'Session Failure', email: 'session-failure@example.com', password: 'test-password-123', confirmPassword: 'test-password-123' }))
+    assert.match(state.error, /account was created/)
+    assert.ok(await scalar("SELECT id FROM profiles WHERE email='session-failure@example.com'"))
+  } finally { failSessionCreation = false }
+  await assert.rejects(auth.signIn(undefined, form({ email: 'session-failure@example.com', password: 'test-password-123' })), /REDIRECT:\/verify-email/)
+})
+
+test('legacy mixed-case emails can sign in and cannot register twice', async () => {
+  const hash = await require('bcryptjs').hash('test-password-123', 4)
+  await db.query("INSERT INTO profiles(full_name,email,password_hash) VALUES('Mixed Case','MixedCase@example.com',$1)", [hash])
+  await assert.rejects(auth.signIn(undefined, form({ email: ' MIXEDCASE@example.com ', password: 'test-password-123' })), /REDIRECT:\/client/)
+  const duplicate = await auth.signUp(undefined, form({ full_name: 'Duplicate', email: 'mixedcase@example.com', password: 'test-password-123', confirmPassword: 'test-password-123' }))
+  assert.match(duplicate.error, /already exists/)
+  await assert.rejects(db.query("INSERT INTO profiles(full_name,email,password_hash) VALUES('Duplicate','MIXEDCASE@example.com',$1)", [hash]), error => error.code === '23505')
 })

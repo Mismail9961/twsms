@@ -5,9 +5,11 @@ import { useSearchParams } from 'next/navigation'
 
 type GoogleAuthSectionProps = {
   mode: 'login' | 'signup'
+  hideError?: boolean
 }
 
 const errorMessages: Record<string, string> = {
+  unavailable: 'Sign-in is temporarily unavailable. Please contact support.',
   not_configured: 'Google sign-in is not configured. Please contact your administrator.',
   cancelled: 'Google sign-in was cancelled.',
   invalid_state: 'Google sign-in could not be verified. Please try again.',
@@ -15,14 +17,14 @@ const errorMessages: Record<string, string> = {
   failed: 'Google sign-in could not be completed. Please try again.',
 }
 
-function GoogleAuthContent({ mode }: GoogleAuthSectionProps) {
+function GoogleAuthContent({ mode, hideError }: GoogleAuthSectionProps) {
   const searchParams = useSearchParams()
   const error = searchParams.get('googleError')
   const message = error ? errorMessages[error] : undefined
 
   return (
     <>
-      {message && (
+      {message && !hideError && (
         <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">
           {message}
         </p>

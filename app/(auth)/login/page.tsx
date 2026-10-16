@@ -105,7 +105,7 @@ function LoginForm() {
         </div>
       )}
 
-      <GoogleAuthSection mode="login" />
+      <GoogleAuthSection mode="login" hideError={isPending || !!state} />
 
       <form action={formAction} className="space-y-4" noValidate={false}>
         {fromParam && <input type="hidden" name="from" value={fromParam} />}

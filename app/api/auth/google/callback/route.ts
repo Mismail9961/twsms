@@ -1,3 +1,4 @@
+import { assertAuthReady, logAuthFailure } from '@/lib/auth/readiness'
 import { scheduleEmailDelivery } from '@/lib/email/dispatch'
 import { randomBytes, randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
@@ -50,7 +51,7 @@ async function getOrCreateProfile(googleProfile: GoogleProfile): Promise<Profile
   if (isNeonConfigured()) {
     const matchingProfiles = await dbQuery<Profile>(
       `SELECT id, full_name, email, role, account_status, avatar_url, created_at, updated_at
-       FROM profiles WHERE email = $1 LIMIT 1`,
+       FROM profiles WHERE lower(email) = $1 LIMIT 1`,
       [email]
     )
     if (matchingProfiles[0]) return matchingProfiles[0]
@@ -59,7 +60,7 @@ async function getOrCreateProfile(googleProfile: GoogleProfile): Promise<Profile
     const createdProfiles = await dbQuery<Profile>(
       `INSERT INTO profiles (full_name, email, password_hash, role, account_status, avatar_url, auth_provider)
        VALUES ($1, $2, $3, 'client', 'active', $4, 'google')
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT DO NOTHING
        RETURNING id, full_name, email, role, account_status, avatar_url, created_at, updated_at`,
       [googleProfile.name?.trim() || email, email, passwordHash, googleProfile.picture || null]
     )
@@ -67,7 +68,7 @@ async function getOrCreateProfile(googleProfile: GoogleProfile): Promise<Profile
 
     const concurrentProfile = await dbQuery<Profile>(
       `SELECT id, full_name, email, role, account_status, avatar_url, created_at, updated_at
-       FROM profiles WHERE email = $1 LIMIT 1`,
+       FROM profiles WHERE lower(email) = $1 LIMIT 1`,
       [email]
     )
     if (concurrentProfile[0]) return concurrentProfile[0]
@@ -132,7 +133,10 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
   if (!code) return response('failed')
 
+  let stage = 'configuration'
   try {
+    await assertAuthReady()
+    stage = 'token_exchange'
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -144,6 +148,7 @@ export async function GET(request: NextRequest) {
         grant_type: 'authorization_code',
       }),
       cache: 'no-store',
+      signal: AbortSignal.timeout(15000),
     })
 
     if (!tokenResponse.ok) {
@@ -153,6 +158,7 @@ export async function GET(request: NextRequest) {
     const tokenData = (await tokenResponse.json()) as GoogleTokenResponse
     if (!tokenData.id_token) throw new Error('Google did not return an ID token')
 
+    stage = 'token_validation'
     const { payload } = await jwtVerify(tokenData.id_token, googleJwks, {
       issuer: ['https://accounts.google.com', 'accounts.google.com'],
       audience: config.clientId,
@@ -168,6 +174,7 @@ export async function GET(request: NextRequest) {
       throw new Error('Google ID token claims were invalid')
     }
 
+    stage = 'database'
     const profile = await getOrCreateProfile(googleProfile)
     if (profile.account_status !== 'active') {
       return response('inactive_account')
@@ -178,6 +185,7 @@ export async function GET(request: NextRequest) {
       try { await emailQuery(`WITH changed AS (UPDATE profiles SET last_login_notice_at=now() WHERE id=$1 AND (last_login_notice_at IS NULL OR last_login_notice_at<now()-interval '30 days') RETURNING id) INSERT INTO email_outbox(event_key,kind,recipient_id) SELECT 'login:'||id||':'||CURRENT_DATE,'login',id FROM changed ON CONFLICT DO NOTHING`, [profile.id]) } catch { console.error('[Login notice] Could not enqueue') }
     }
     scheduleEmailDelivery()
+    stage = 'session'
     const token = await encodeSessionToken(profile)
     const destination = dashboardPathForRole(profile.role)
     const success = applySessionCookie(
@@ -186,7 +194,7 @@ export async function GET(request: NextRequest) {
     )
     return clearOAuthCookie(success)
   } catch (error) {
-    console.error('[Google Sign In Error]:', error)
-    return response('failed')
+    logAuthFailure(`google-${stage}`, error)
+    return response(['configuration', 'database', 'session'].includes(stage) ? 'unavailable' : 'failed')
   }
 }

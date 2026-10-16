@@ -84,14 +84,9 @@ For an existing database, reapply `db/schema.sql` after pulling schema updates; 
 includes idempotent migrations for ticket fields and the binary data column used by
 secure ticket file sharing. Each uploaded file is limited to 4 MB.
 
-If the project uses Prisma, the following commands may be applicable:
-
-```bash
-npx prisma generate
-npx prisma migrate deploy
-```
-
-If the project uses another database ORM or migration tool, follow its corresponding setup instructions.
+This project uses SQL migrations, not Prisma. Initialize a fresh database with
+`db/schema.sql`, then run `npm run db:migrate` and `npm run db:check` against the
+same database used by the deployment. See [Vercel authentication setup](docs/vercel-auth.md).
 
 ### 5. Run the Development Server
 

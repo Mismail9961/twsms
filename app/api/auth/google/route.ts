@@ -1,3 +1,4 @@
+import { assertAuthReady, logAuthFailure } from '@/lib/auth/readiness'
 import { randomBytes } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getGoogleOAuthConfig, GOOGLE_OAUTH_COOKIE } from '@/lib/auth/google'
@@ -9,6 +10,16 @@ export async function GET(request: NextRequest) {
 
   if (!config) {
     return NextResponse.redirect(new URL(`${returnPath}?googleError=not_configured`, request.url))
+  }
+
+  // OAuth state is host-only. Start on the callback host before setting it.
+  const callbackOrigin = new URL(config.redirectUri).origin
+  if (callbackOrigin !== new URL(request.url).origin) {
+    return NextResponse.redirect(new URL(`/api/auth/google?mode=${returnPath === '/signup' ? 'signup' : 'login'}`, callbackOrigin))
+  }
+  try { await assertAuthReady() } catch (error) {
+    logAuthFailure('google-configuration', error)
+    return NextResponse.redirect(new URL(`${returnPath}?googleError=unavailable`, request.url))
   }
 
   const state = randomBytes(32).toString('base64url')

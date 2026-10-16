@@ -133,7 +133,7 @@ export default function SignupPage() {
         </div>
       )}
 
-      <GoogleAuthSection mode="signup" />
+      <GoogleAuthSection mode="signup" hideError={isPending || !!state} />
 
       <form action={formAction} className="space-y-4">
         {/* Full name */}

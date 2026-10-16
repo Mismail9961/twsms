@@ -7,13 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --require ./tests/register.cjs tests/email.test.cjs",
+    "test": "node --require ./tests/register.cjs --test tests/*.test.cjs",
     "typecheck": "tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
     "db:check": "node scripts/migrate.mjs --check",
     "email:check": "node scripts/email-check.mjs",
     "email:work": "node scripts/email-worker.mjs",
-    "email:watch": "node scripts/email-worker.mjs --watch"
+    "email:watch": "node scripts/email-worker.mjs --watch",
+    "auth:check": "node scripts/auth-check.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

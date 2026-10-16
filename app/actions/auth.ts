@@ -9,6 +9,7 @@ import { isNeonConfigured, dbQuery, memoryDb } from '@/lib/db'
 import { allowAuthRequest } from '@/lib/auth/rate-limit'
 import { issueChallenge, requestReset, consumeChallenge } from '@/lib/auth/challenges'
 import { emailQuery } from '@/lib/email/store'
+import { assertAuthReady, logAuthFailure } from '@/lib/auth/readiness'
 import type { Profile } from '@/lib/types'
 
 const signupSchema = z.object({
@@ -31,6 +32,10 @@ export type AuthState =
   | undefined
 
 export async function signUp(prevState: AuthState, formData: FormData): Promise<AuthState> {
+  try { await assertAuthReady() } catch (error) {
+    logAuthFailure('configuration', error)
+    return { error: 'Authentication is temporarily unavailable. Please contact support.' }
+  }
   const data = {
     full_name: (formData.get('full_name') as string)?.trim(),
     email: (formData.get('email') as string)?.trim().toLowerCase(),
@@ -55,7 +60,7 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
   if (isNeonConfigured()) {
     try {
       // Check if email already exists
-      const existing = await dbQuery<Profile>('SELECT id FROM profiles WHERE email = $1', [data.email])
+      const existing = await dbQuery<Profile>('SELECT id FROM profiles WHERE lower(email) = $1', [data.email])
       if (existing.length > 0) {
         return { error: 'An account with this email address already exists.' }
       }
@@ -68,8 +73,9 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
         [data.full_name, data.email, passwordHash]
       )
       profile = rows[0]
-    } catch {
-      console.error('[Sign Up Error] Database write failed')
+    } catch (error) {
+      if ((error as { code?: string })?.code === '23505') return { error: 'An account with this email address already exists. Please sign in or reset your password.' }
+      logAuthFailure('signup', error)
       return { error: 'Registration failed. Please try again.' }
     }
   } else {
@@ -96,12 +102,19 @@ export async function signUp(prevState: AuthState, formData: FormData): Promise<
   if (isNeonConfigured()) {
     try { await issueChallenge(profile.id, 'verify') } catch { console.error('[Verification] Could not enqueue challenge') }
   }
-  await createSession(profile)
+  try { await createSession(profile) } catch (error) {
+    logAuthFailure('signup-session', error)
+    return { error: 'Your account was created, but sign-in could not be completed. Please sign in again.' }
+  }
   scheduleEmailDelivery()
   redirect(isNeonConfigured() ? '/verify-email' : '/client')
 }
 
 export async function signIn(prevState: AuthState, formData: FormData): Promise<AuthState> {
+  try { await assertAuthReady() } catch (error) {
+    logAuthFailure('configuration', error)
+    return { error: 'Authentication is temporarily unavailable. Please contact support.' }
+  }
   const data = {
     email: (formData.get('email') as string)?.trim().toLowerCase(),
     password: formData.get('password') as string,
@@ -118,7 +131,7 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
   if (isNeonConfigured()) {
     try {
       const rows = await dbQuery<Profile & { password_hash: string }>(
-        'SELECT id, full_name, email, password_hash, role, account_status, avatar_url, created_at, updated_at FROM profiles WHERE email = $1',
+        'SELECT id, full_name, email, password_hash, role, account_status, avatar_url, created_at, updated_at FROM profiles WHERE lower(email) = $1',
         [data.email]
       )
       if (rows.length > 0) {
@@ -126,7 +139,7 @@ export async function signIn(prevState: AuthState, formData: FormData): Promise<
         passwordHash = rows[0].password_hash
       }
     } catch (err) {
-      console.error('[Sign In DB Error]:', err)
+      logAuthFailure('signin-database', err)
       return { error: 'Unable to sign in right now. Please try again.' }
     }
   }
