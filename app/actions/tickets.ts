@@ -70,6 +70,17 @@ export async function createTicket(
     return { errors: result.error.flatten().fieldErrors as Record<string, string[]> }
   }
 
+  if (result.data.category_id) {
+    try {
+      const category = isNeonConfigured()
+        ? (await dbQuery<{ id: string }>('SELECT id FROM ticket_categories WHERE id=$1 AND is_active=true', [result.data.category_id]))[0]
+        : memoryDb.categories.find(category => category.id === result.data.category_id && category.is_active)
+      if (!category) return { errors: { category_id: ['This category is no longer available. Choose another category.'] } }
+    } catch {
+      return { errors: { category_id: ['Could not verify this category. Refresh the form and try again.'] } }
+    }
+  }
+
   const suppliedKey = String(formData.get('request_key') || '')
   if (suppliedKey && !z.string().uuid().safeParse(suppliedKey).success) return { error: 'Invalid request. Reload the form and try again.' }
   const requestKey = suppliedKey || randomUUID()
@@ -219,6 +230,11 @@ export async function updateTicketStatus(
 ) {
   const session = await getSession()
   if (!session) throw new Error('Unauthorized')
+  const ticket = await getTicketById(ticketId, session)
+  if (!ticket) throw new Error('Ticket not found or access denied.')
+  if (session.role === 'client' && (ticket.status !== 'resolved' || !['closed', 'in_progress'].includes(newStatus))) {
+    throw new Error('Clients can only confirm or reopen a resolved ticket.')
+  }
 
   const isResolved = newStatus === 'resolved'
   const isClosed = newStatus === 'closed'
@@ -228,10 +244,10 @@ export async function updateTicketStatus(
     try {
       await dbQuery(
         `UPDATE tickets 
-         SET status = $1, 
+         SET status = $1::varchar,
              updated_at = NOW(),
-             resolved_at = CASE WHEN $1 = 'resolved' THEN NOW() ELSE resolved_at END,
-             closed_at = CASE WHEN $1 = 'closed' THEN NOW() ELSE closed_at END
+             resolved_at = CASE WHEN $1::varchar = 'resolved' THEN NOW() ELSE resolved_at END,
+             closed_at = CASE WHEN $1::varchar = 'closed' THEN NOW() ELSE closed_at END
          WHERE id = $2`,
         [newStatus, ticketId]
       )
@@ -243,6 +259,7 @@ export async function updateTicketStatus(
       )
     } catch (err) {
       console.error('[updateTicketStatus Neon Error]:', err)
+      throw new Error('Could not update the ticket status. Please try again.')
     }
   } else {
     const ticket = memoryDb.tickets.find((t) => t.id === ticketId)
@@ -450,6 +467,10 @@ export async function confirmResolution(ticketId: string, confirmed: boolean) {
     throw new Error('Only the client can confirm resolution.')
   }
 
+  const ticket = await getTicketById(ticketId, session)
+  if (!ticket || ticket.client_id !== session.id) throw new Error('Ticket not found or access denied.')
+  if (ticket.status !== 'resolved') throw new Error('Only resolved tickets can be confirmed or reopened.')
+
   const newStatus: TicketStatus = confirmed ? 'closed' : 'in_progress'
   const note = confirmed
     ? 'Resolution confirmed and closed by client.'
@@ -469,13 +490,17 @@ export async function submitRating(
     throw new Error('Only clients can rate tickets.')
   }
 
-  if (rating < 1 || rating > 5) {
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5.')
   }
 
   if (!isTicketResolutionMethod(resolutionMethod)) {
     throw new Error('Please select how the problem was resolved.')
   }
+
+  const ticket = await getTicketById(ticketId, session)
+  if (!ticket || ticket.client_id !== session.id) throw new Error('Ticket not found or access denied.')
+  if (ticket.status !== 'resolved' && ticket.status !== 'closed') throw new Error('Ratings are available once the ticket is resolved or closed.')
 
   const now = new Date().toISOString()
 

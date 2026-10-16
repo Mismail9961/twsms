@@ -57,10 +57,13 @@ export function RatingForm({ ticketId }: { ticketId: string }) {
           <button
             type="button"
             key={star}
+            aria-label={`Rate ${star} out of 5 stars`}
+            aria-pressed={rating === star}
+            disabled={isSubmitting}
             onClick={() => setRating(star)}
             onMouseEnter={() => setHoverRating(star)}
             onMouseLeave={() => setHoverRating(0)}
-            className="p-1 focus:outline-none transition-transform hover:scale-110"
+            className="rounded p-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2c2772] transition-transform hover:scale-110 disabled:opacity-50"
           >
             <Star
               className={`h-6 w-6 ${
@@ -102,6 +105,9 @@ export function RatingForm({ ticketId }: { ticketId: string }) {
 
       <div>
         <textarea
+          aria-label="Optional rating feedback"
+          disabled={isSubmitting}
+          maxLength={5000}
           rows={2}
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}

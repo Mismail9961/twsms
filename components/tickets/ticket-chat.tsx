@@ -1,17 +1,19 @@
 'use client'
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Send, Lock, FileText, Loader2, ArrowDown, Check, MessageSquare, WifiOff } from 'lucide-react'
 import { mergeMessages } from '@/lib/chat/messages'
 import { sendMessage } from '@/app/actions/tickets'
 import { formatDateTime, getInitials, formatFileSize } from '@/lib/utils'
-import type { TicketMessage, Role, MessageType } from '@/lib/types'
+import type { TicketMessage, Role, MessageType, TicketStatus } from '@/lib/types'
 
 interface TicketChatProps {
   ticketId: string
   currentUserId: string
   userRole: Role
   initialMessages: TicketMessage[]
+  initialStatus?: TicketStatus
 }
 
 const POLL_INTERVAL_MS = 1500
@@ -22,7 +24,9 @@ export function TicketChat(props: TicketChatProps) {
   return <Conversation key={`${props.ticketId}:${props.currentUserId}:${props.userRole}`} {...props} />
 }
 
-function Conversation({ ticketId, currentUserId, userRole, initialMessages }: TicketChatProps) {
+function Conversation({ ticketId, currentUserId, userRole, initialMessages, initialStatus }: TicketChatProps) {
+  const router = useRouter()
+  const statusRef = useRef<string | undefined>(initialStatus)
   const [messages, setMessages] = useState<TicketMessage[]>(initialMessages)
   const [inputText, setInputText] = useState('')
   const [isInternalNote, setIsInternalNote] = useState(false)
@@ -104,6 +108,12 @@ function Conversation({ ticketId, currentUserId, userRole, initialMessages }: Ti
         if (!Array.isArray(incoming)) throw new Error('Invalid conversation response')
         if (!active) return
         setMessages(current => mergeMessages(current, incoming))
+        const ticketStatus = response.headers.get('X-Ticket-Status')
+        if (ticketStatus) {
+          const changed = statusRef.current !== undefined && statusRef.current !== ticketStatus
+          statusRef.current = ticketStatus
+          if (changed) router.refresh()
+        }
         failures = 0
         setConnection('live')
       } catch {
@@ -141,7 +151,7 @@ function Conversation({ ticketId, currentUserId, userRole, initialMessages }: Ti
       window.removeEventListener('online', resume)
       window.removeEventListener('offline', offline)
     }
-  }, [ticketId])
+  }, [ticketId, router])
 
   const handleSend = async (event: React.FormEvent) => {
     event.preventDefault()

@@ -17,7 +17,8 @@ export async function GET(
     }
 
     const { id } = await params
-    if (!await getTicketById(id, session)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const ticket = await getTicketById(id, session)
+    if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') || undefined
     const before = searchParams.get('before') || undefined
@@ -35,7 +36,7 @@ export async function GET(
     const readThrough = new Date().toISOString()
     const messages = await getTicketMessages(id, safeRole, { after, before, limit })
     if (isNeonConfigured() && !before) await emailQuery('INSERT INTO conversation_reads(ticket_id,user_id,read_at) VALUES($1,$2,$3) ON CONFLICT(ticket_id,user_id) DO UPDATE SET read_at=GREATEST(conversation_reads.read_at,EXCLUDED.read_at)', [id, session.id, readThrough])
-    return NextResponse.json(messages, { headers: { 'Cache-Control': 'private, no-store, max-age=0' } })
+    return NextResponse.json(messages, { headers: { 'Cache-Control': 'private, no-store, max-age=0', 'X-Ticket-Status': ticket.status } })
   } catch {
     return NextResponse.json({ error: 'Conversation is temporarily unavailable. Retrying shortly.' }, {
       status: 503,

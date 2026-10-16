@@ -65,13 +65,15 @@ export function CreateTicketForm({ categories }: CreateTicketFormProps) {
               disabled={isPending}
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base sm:text-sm text-gray-900 focus:border-[#2c2772] focus:outline-none focus:ring-1 focus:ring-[#2c2772] bg-white disabled:opacity-50"
             >
-              <option value="">Select a category...</option>
+              <option value="">{categories.length ? 'Select a category...' : 'No categories available'}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+            {categories.length === 0 && <p className="mt-1.5 text-xs text-slate-500">Your administrator hasn’t added any categories yet. You can still submit your request.</p>}
+            {state?.errors?.category_id && <p role="alert" className="mt-1 text-xs text-red-600">{state.errors.category_id[0]}</p>}
           </div>
 
           <div>

@@ -71,7 +71,7 @@ export default async function ClientTicketDetailPage({
       )}
 
       {/* Rating & Feedback Banner (Section 8) */}
-      {ticket.status === 'closed' && (
+      <section aria-label="Ticket rating and feedback">
         <div className="rounded-2xl border border-[#2c2772]/20 bg-[#2c2772]/5 p-4 sm:p-6 shadow-sm">
           {ticket.rating ? (
             <div className="space-y-2">
@@ -106,11 +106,17 @@ export default async function ClientTicketDetailPage({
                 </p>
               )}
             </div>
-          ) : (
+          ) : ticket.status === 'resolved' || ticket.status === 'closed' ? (
             <RatingForm ticketId={ticket.id} />
+          ) : (
+            <div className="space-y-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-[#2c2772]"><Star className="h-4 w-4 text-amber-500" />Rate your support experience</h3>
+              <p className="text-sm text-slate-600">You’ll be able to rate your support and share feedback once this ticket is marked as resolved or closed.</p>
+              <p className="text-xs text-slate-500">Current status: <span className="capitalize font-medium">{ticket.status.replaceAll('_', ' ')}</span></p>
+            </div>
           )}
         </div>
-      )}
+      </section>
 
       {/* Main Grid: Details + Live Chat */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
@@ -237,6 +243,7 @@ export default async function ClientTicketDetailPage({
             currentUserId={session.id}
             userRole={session.role}
             initialMessages={messages}
+            initialStatus={ticket.status}
           />
         </div>
       </div>

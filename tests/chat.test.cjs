@@ -51,7 +51,7 @@ fake('@/lib/auth/session.ts', { getSession: async () => session })
 fake('@/lib/db', { isNeonConfigured: () => false })
 fake('@/lib/email/store.ts', { emailQuery: async () => [] })
 fake('@/lib/data/tickets.ts', {
-  getTicketById: async () => allowed ? { id: 'ticket-1' } : null,
+  getTicketById: async () => allowed ? { id: 'ticket-1', status: 'assigned' } : null,
   getTicketMessages: async (_id, role) => {
     if (fail) throw new Error('Database unavailable')
     capturedRole = role
@@ -66,6 +66,7 @@ test('live messages enforce session role and disable response caching', async ()
   assert.equal(response.status, 200)
   assert.equal(capturedRole, 'client')
   assert.match(response.headers.get('cache-control'), /no-store/)
+  assert.equal(response.headers.get('x-ticket-status'), 'assigned')
   assert.equal((await response.json())[0].id, 'public')
 })
 

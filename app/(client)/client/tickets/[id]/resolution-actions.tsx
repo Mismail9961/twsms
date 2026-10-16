@@ -6,26 +6,36 @@ import { confirmResolution } from '@/app/actions/tickets'
 
 export function ResolutionActions({ ticketId }: { ticketId: string }) {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleConfirm = async () => {
+    if (loading) return
     setLoading(true)
+    setError('')
     try {
       await confirmResolution(ticketId, true)
+    } catch {
+      setError('Could not confirm the resolution. Refresh the ticket and try again.')
     } finally {
       setLoading(false)
     }
   }
 
   const handleReopen = async () => {
+    if (loading) return
     setLoading(true)
+    setError('')
     try {
       await confirmResolution(ticketId, false)
+    } catch {
+      setError('Could not reopen the ticket. Refresh the ticket and try again.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
+    <div className="space-y-2">
     <div className="flex flex-col min-[380px]:flex-row items-stretch min-[380px]:items-center gap-2">
       <button
         onClick={handleConfirm}
@@ -48,6 +58,8 @@ export function ResolutionActions({ ticketId }: { ticketId: string }) {
         <RotateCcw className="h-3.5 w-3.5 text-emerald-600" />
         <span>Issue Persists</span>
       </button>
+    </div>
+    {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
     </div>
   )
 }

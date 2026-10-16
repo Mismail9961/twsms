@@ -21,6 +21,7 @@ const { issueChallenge, consumeChallenge, requestReset } = require('../lib/auth/
 const { runEmailWorker } = require('../lib/email/worker.ts')
 const auth = require('../app/actions/auth.ts')
 const actions = require('../app/actions/tickets.ts')
+const categories = require('../app/actions/categories.ts')
 let client, employee, other, admin, ticket
 const form = (data) => { const f = new FormData(); Object.entries(data).forEach(([k, v]) => f.set(k, v)); return f }
 async function scalar(sql, params = []) { return (await db.query(sql, params)).rows[0] }
@@ -459,4 +460,53 @@ test('legacy mixed-case emails can sign in and cannot register twice', async () 
   const duplicate = await auth.signUp(undefined, form({ full_name: 'Duplicate', email: 'mixedcase@example.com', password: 'test-password-123', confirmPassword: 'test-password-123' }))
   assert.match(duplicate.error, /already exists/)
   await assert.rejects(db.query("INSERT INTO profiles(full_name,email,password_hash) VALUES('Duplicate','MIXEDCASE@example.com',$1)", [hash]), error => error.code === '23505')
+})
+
+test('admin categories appear for new tickets, delete preserves history, and removed names can be restored', async () => {
+  const { getCategories } = require('../lib/data/tickets.ts')
+  session = client
+  assert.match((await categories.addCategory(undefined, form({ name: 'Network test' }))).error, /administrators/)
+  session = admin
+  assert.match((await categories.addCategory(undefined, form({ name: '  ' }))).error, /category name/)
+  assert.ok((await categories.addCategory(undefined, form({ name: ' Network test ', description: 'Test routing' }))).success)
+  const category = (await getCategories()).find(category => category.name === 'Network test')
+  assert.ok(category)
+  assert.match((await categories.addCategory(undefined, form({ name: 'NETWORK TEST' }))).error, /already exists/)
+  await db.query('UPDATE tickets SET category_id=$1 WHERE id=$2', [category.id, ticket.id])
+  session = client
+  assert.match((await categories.deleteCategory(undefined, form({ category_id: category.id }))).error, /administrators/)
+  session = admin
+  assert.ok((await categories.deleteCategory(undefined, form({ category_id: category.id }))).success)
+  assert.ok(!(await getCategories()).some(value => value.id === category.id))
+  assert.equal((await scalar('SELECT category_id FROM tickets WHERE id=$1', [ticket.id])).category_id, category.id)
+  session = client
+  const state = await actions.createTicket(undefined, form({ title: 'Stale category test', description: 'This category was removed while the form was open', priority: 'medium', category_id: category.id }))
+  assert.match(state.errors.category_id[0], /no longer available/)
+  session = admin
+  assert.ok((await categories.addCategory(undefined, form({ name: 'Network test' }))).success)
+  assert.equal((await getCategories()).find(category => category.name === 'Network test').id, category.id)
+})
+
+test('ticket ratings are allowed only for the owner of a resolved or closed ticket', async () => {
+  const ratedTicket = await scalar("INSERT INTO tickets(ticket_number,client_id,title,description,status) VALUES('TW-RATING-ACCESS',$1,'Rating access test','Validate rating ownership and status','assigned') RETURNING *", [client.id])
+  session = client
+  await assert.rejects(actions.submitRating(ratedTicket.id, 5, 'permanent_fix'), /resolved or closed/)
+  await assert.rejects(actions.confirmResolution(ratedTicket.id, true), /Only resolved/)
+  await assert.rejects(actions.submitRating(ratedTicket.id, NaN, 'permanent_fix'), /between 1 and 5/)
+  await assert.rejects(actions.submitRating(ratedTicket.id, 3.5, 'permanent_fix'), /between 1 and 5/)
+  session = employee
+  await assert.rejects(actions.submitRating(ratedTicket.id, 5, 'permanent_fix'), /Only clients/)
+  const stranger = await scalar("INSERT INTO profiles(full_name,email,password_hash,role) VALUES('Rating Stranger','rating-stranger@example.com','hash','client') RETURNING *")
+  session = stranger
+  await assert.rejects(actions.submitRating(ratedTicket.id, 5, 'permanent_fix'), /access denied/)
+  await assert.rejects(actions.confirmResolution(ratedTicket.id, true), /access denied/)
+  session = client
+  await db.query("UPDATE tickets SET status='resolved' WHERE id=$1", [ratedTicket.id])
+  await actions.submitRating(ratedTicket.id, 4, 'guidance', 'Resolved through guidance')
+  assert.equal((await scalar('SELECT overall_rating FROM ticket_ratings WHERE ticket_id=$1', [ratedTicket.id])).overall_rating, 4)
+  await actions.submitRating(ratedTicket.id, 1, 'other')
+  assert.equal((await scalar('SELECT count(*)::int AS n FROM ticket_ratings WHERE ticket_id=$1', [ratedTicket.id])).n, 1)
+  await actions.confirmResolution(ratedTicket.id, true)
+  assert.equal((await scalar('SELECT status FROM tickets WHERE id=$1', [ratedTicket.id])).status, 'closed')
+  await actions.submitRating(ratedTicket.id, 4, 'guidance')
 })
