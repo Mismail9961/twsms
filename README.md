@@ -80,9 +80,12 @@ Do not commit environment files containing credentials or sensitive information 
 ### 4. Configure the Database
 
 Ensure the database schema is initialized and all required migrations have been applied.
-For an existing database, reapply `db/schema.sql` after pulling schema updates; it
-includes idempotent migrations for ticket fields and the binary data column used by
-secure ticket file sharing. Each uploaded file is limited to 4 MB.
+For an existing database, run `npm run db:migrate` after pulling schema updates,
+then `npm run db:check`. Migration 003 adds ticket serial numbers, rating resolution
+methods, and the binary storage column used by secure ticket file sharing without
+changing existing records. Each uploaded file is limited to 4 MB.
+Migration 004 restores missing email settings and worker-lock defaults. The database
+check also verifies these required rows so missing runtime data cannot pass silently.
 
 This project uses SQL migrations, not Prisma. Initialize a fresh database with
 `db/schema.sql`, then run `npm run db:migrate` and `npm run db:check` against the

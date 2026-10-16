@@ -3,7 +3,7 @@ import { neon } from '@neondatabase/serverless'
 import { setDefaultResultOrder } from 'node:dns'
 import { readFile, readdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { applyMigration, schemaCheckSql } from '../lib/db/migrations.mjs'
+import { applyMigration, schemaCheckSql, runtimeCheckSql } from '../lib/db/migrations.mjs'
 
 async function main() {
   const root = fileURLToPath(new URL('../', import.meta.url))
@@ -20,6 +20,9 @@ async function main() {
     }
   }
   const checks = await sql.query(schemaCheckSql)
+  if (!checks.some(row => row.kind === 'table' && !row.present)) {
+    checks.push(...await sql.query(runtimeCheckSql))
+  }
   const missing = checks.filter(row => !row.present)
   if (missing.length) {
     for (const row of missing) console.error(`Missing ${row.kind}: ${row.name}`)

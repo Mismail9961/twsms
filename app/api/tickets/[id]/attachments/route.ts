@@ -88,7 +88,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            'File storage is not set up in the database yet. Apply the ticket_attachments file_data migration from db/schema.sql, then try again.',
+            'File storage is not set up in the database yet. Run npm run db:migrate and npm run db:check, then try again.',
         },
         { status: 503 }
       )
