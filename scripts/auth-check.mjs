@@ -4,6 +4,12 @@ import { emailConfigurationIssues } from '../lib/email/config.mjs'
 
 nextEnv.loadEnvConfig(fileURLToPath(new URL('../', import.meta.url)), false)
 const issues = emailConfigurationIssues({ ...process.env, NODE_ENV: 'production' })
+try {
+  const database = new URL(process.env.DATABASE_URL || '')
+  if (!['postgres:', 'postgresql:'].includes(database.protocol) || !database.hostname || !database.username || database.pathname.length < 2) throw new Error()
+} catch {
+  issues.push('DATABASE_URL must be the PostgreSQL connection URL from Neon, not a placeholder or shell command')
+}
 if (!process.env.SESSION_SECRET?.trim() || process.env.SESSION_SECRET.trim().length < 32) issues.push('SESSION_SECRET must contain at least 32 characters')
 if (!process.env.GOOGLE_CLIENT_ID?.trim() || !process.env.GOOGLE_CLIENT_SECRET?.trim()) {
   console.log('Google sign-in is disabled: configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable it.')
