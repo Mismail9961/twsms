@@ -84,7 +84,7 @@ function TechWorldLogo() {
         alt="Technology World"
         width={140}
         height={32}
-        className="h-full w-full object-contain"
+        className="h-auto w-full object-contain"
         priority
       />
     </div>

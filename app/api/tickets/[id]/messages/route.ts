@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getTicketById, getTicketMessages } from '@/lib/data/tickets'
+import { getTicketAccess, getTicketMessages } from '@/lib/data/tickets'
 import { getSession } from '@/lib/auth/session'
 import { emailQuery } from '@/lib/email/store'
 import { isNeonConfigured } from '@/lib/db'
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     const { id } = await params
-    const ticket = await getTicketById(id, session)
+    const ticket = await getTicketAccess(id, session)
     if (!ticket) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const { searchParams } = new URL(request.url)
     const after = searchParams.get('after') || undefined
@@ -34,8 +34,12 @@ export async function GET(
     const safeRole: Role = session.role === 'admin' ? 'admin' : session.role
 
     const readThrough = new Date().toISOString()
-    const messages = await getTicketMessages(id, safeRole, { after, before, limit })
-    if (isNeonConfigured() && !before) await emailQuery('INSERT INTO conversation_reads(ticket_id,user_id,read_at) VALUES($1,$2,$3) ON CONFLICT(ticket_id,user_id) DO UPDATE SET read_at=GREATEST(conversation_reads.read_at,EXCLUDED.read_at)', [id, session.id, readThrough])
+    const [messages] = await Promise.all([
+      getTicketMessages(id, safeRole, { after, before, limit }),
+      isNeonConfigured() && !before
+        ? emailQuery('INSERT INTO conversation_reads(ticket_id,user_id,read_at) VALUES($1,$2,$3) ON CONFLICT(ticket_id,user_id) DO UPDATE SET read_at=GREATEST(conversation_reads.read_at,EXCLUDED.read_at)', [id, session.id, readThrough])
+        : Promise.resolve(),
+    ])
     return NextResponse.json(messages, { headers: { 'Cache-Control': 'private, no-store, max-age=0', 'X-Ticket-Status': ticket.status } })
   } catch {
     return NextResponse.json({ error: 'Conversation is temporarily unavailable. Retrying shortly.' }, {

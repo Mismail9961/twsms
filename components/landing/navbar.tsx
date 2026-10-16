@@ -7,7 +7,7 @@ import { Menu, X, ArrowRight, ChevronRight } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth/session'
 
 interface LandingNavbarProps {
-  user: SessionPayload | null
+  user?: SessionPayload | null
   dashboardHref?: string
 }
 
@@ -21,7 +21,25 @@ const navLinks = [
 const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2772]'
 
-export function LandingNavbar({ user, dashboardHref = '/client' }: LandingNavbarProps) {
+export function LandingNavbar({ user: initialUser, dashboardHref: initialDashboardHref }: LandingNavbarProps) {
+  const [visitor, setVisitor] = useState<{ signedIn: boolean; dashboardHref: string } | null>(null)
+  const user = initialUser === undefined ? visitor?.signedIn : initialUser
+  const dashboardHref = initialDashboardHref ?? visitor?.dashboardHref ?? '/login'
+
+  // Public HTML stays cacheable; account navigation is private and loads after hydration.
+  useEffect(() => {
+    if (initialUser !== undefined) return
+    const controller = new AbortController()
+    fetch('/api/auth/session', { cache: 'no-store', signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(value => {
+        if (value?.signedIn && ['/admin', '/employee', '/client'].includes(value.dashboardHref)) {
+          setVisitor(value)
+        }
+      })
+      .catch(() => { /* Sign-in links remain available if the session check fails. */ })
+    return () => controller.abort()
+  }, [initialUser])
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 

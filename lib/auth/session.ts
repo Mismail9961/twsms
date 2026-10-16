@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { emailQuery } from '@/lib/email/store'
 import { isNeonConfigured } from '@/lib/db'
 import { SignJWT, jwtVerify } from 'jose'
@@ -60,7 +61,7 @@ export function clearSessionCookie(response: NextResponse) {
 /**
  * Retrieves and validates the current session from the HTTP-only cookie
  */
-export async function getSession(): Promise<SessionPayload | null> {
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
   try {
     if (process.env.NODE_ENV === 'production' && !isNeonConfigured()) return null
     const cookieStore = await cookies()
@@ -83,7 +84,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   } catch {
     return null
   }
-}
+})
 
 /**
  * Removes the session cookie to log the user out

@@ -44,6 +44,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Public documents contain no private data. Avoid a database round trip before CDN delivery.
+  if (pathname === '/contact-us') {
+    return NextResponse.redirect(new URL('/contact', request.url))
+  }
+  if (['/', '/contact', '/privacy', '/terms'].includes(pathname)) {
+    return NextResponse.next()
+  }
+
   const rawToken = request.cookies.get(SESSION_COOKIE)?.value
   const token = rawToken?.trim()
   let sessionUser: { id: string; role: string; email: string } | null = null
@@ -70,18 +78,7 @@ export async function proxy(request: NextRequest) {
     tokenInvalid = true
   }
 
-  // Alias /contact-us to /contact
-  if (pathname === '/contact-us') {
-    return NextResponse.redirect(new URL('/contact', request.url))
-  }
-
-  // Public pages accessible to everyone without auth or authorization
-  if (pathname === '/' || pathname.startsWith('/contact')) {
-    const response = NextResponse.next()
-    return tokenInvalid ? clearInvalidSession(response) : response
-  }
-
-  const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route))
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
 
   if (!sessionUser && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url)
@@ -96,7 +93,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Logged-in users navigating to login/signup/reset are redirected to their dashboard
-  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  const isAuthRoute = AUTH_ROUTES.includes(pathname)
   if (sessionUser && isAuthRoute && pathname !== '/reset-password') {
     return NextResponse.redirect(new URL(dashboardPath(sessionUser.role), request.url))
   }

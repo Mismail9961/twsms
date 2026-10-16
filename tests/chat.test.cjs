@@ -51,7 +51,7 @@ fake('@/lib/auth/session.ts', { getSession: async () => session })
 fake('@/lib/db', { isNeonConfigured: () => false })
 fake('@/lib/email/store.ts', { emailQuery: async () => [] })
 fake('@/lib/data/tickets.ts', {
-  getTicketById: async () => allowed ? { id: 'ticket-1', status: 'assigned' } : null,
+  getTicketAccess: async () => allowed ? { id: 'ticket-1', status: 'assigned' } : null,
   getTicketMessages: async (_id, role) => {
     if (fail) throw new Error('Database unavailable')
     capturedRole = role

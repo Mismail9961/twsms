@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { isNeonConfigured, dbQuery, dbQueryRequired, memoryDb } from '@/lib/db'
 import { randomUUID } from 'node:crypto'
 import type {
@@ -89,6 +90,27 @@ export async function getClientTickets(clientId: string): Promise<Ticket[]> {
     const rating = memoryDb.ratings.find((r) => r.ticket_id === t.id)
     return { ...t, category, assignments, rating }
   })
+}
+
+/** Minimal permission check for frequent chat polling; avoids fetching profiles and ratings. */
+export async function getTicketAccess(ticketId: string, user: { id: string; role: Role }): Promise<Pick<Ticket, 'id' | 'status' | 'client_id'> | null> {
+  if (isNeonConfigured()) {
+    const [ticket] = await dbQuery<Pick<Ticket, 'id' | 'status' | 'client_id'>>(
+      `SELECT t.id, t.status, t.client_id FROM tickets t
+       WHERE t.id = $1 AND (
+         $3 = 'admin' OR ($3 = 'client' AND t.client_id = $2) OR
+         ($3 = 'employee' AND EXISTS (
+           SELECT 1 FROM ticket_assignments a WHERE a.ticket_id = t.id AND a.employee_id = $2
+         ))
+       )`, [ticketId, user.id, user.role]
+    )
+    return ticket ?? null
+  }
+  const ticket = memoryDb.tickets.find(item => item.id === ticketId)
+  if (!ticket) return null
+  if (user.role === 'client' && ticket.client_id !== user.id) return null
+  if (user.role === 'employee' && !memoryDb.assignments.some(item => item.ticket_id === ticketId && item.employee_id === user.id)) return null
+  return { id: ticket.id, status: ticket.status, client_id: ticket.client_id }
 }
 
 /**
@@ -207,9 +229,10 @@ export async function getAllTickets(filters?: {
   search?: string
   page?: number
   pageSize?: number
+  includeAssignments?: boolean
 }): Promise<{ tickets: Ticket[]; total: number }> {
-  const page = filters?.page || 1
-  const pageSize = filters?.pageSize || 20
+  const page = Math.max(1, Math.trunc(Number(filters?.page) || 1))
+  const pageSize = Math.max(1, Math.min(1000, Math.trunc(Number(filters?.pageSize) || 20)))
 
   if (isNeonConfigured()) {
     {
@@ -237,11 +260,7 @@ export async function getAllTickets(filters?: {
 
       const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-      const countResult = await dbQuery<{ count: string }>(
-        `SELECT COUNT(*) as count FROM tickets t JOIN profiles p ON t.client_id = p.id ${whereClause}`,
-        params
-      )
-      const total = parseInt(countResult[0]?.count || '0', 10)
+      const countParams = [...params]
 
       params.push(pageSize)
       params.push((page - 1) * pageSize)
@@ -253,12 +272,17 @@ export async function getAllTickets(filters?: {
         JOIN profiles p ON t.client_id = p.id
         LEFT JOIN ticket_categories c ON t.category_id = c.id
         ${whereClause}
-        ORDER BY t.created_at DESC
+        ORDER BY t.created_at DESC, t.id DESC
         LIMIT $${params.length - 1} OFFSET $${params.length}
       `
-      const tickets = await attachAssignments(await dbQuery<Ticket>(queryStr, params))
-
-      return { tickets, total }
+      const [countResult, tickets] = await Promise.all([
+        dbQuery<{ count: string }>(
+          `SELECT COUNT(*) as count FROM tickets t JOIN profiles p ON t.client_id = p.id ${whereClause}`,
+          countParams
+        ),
+        dbQuery<Ticket>(queryStr, params).then(tickets => filters?.includeAssignments === false ? tickets : attachAssignments(tickets)),
+      ])
+      return { tickets, total: Number(countResult[0]?.count || 0) }
     }
   }
 
@@ -343,7 +367,7 @@ export async function getDashboardStats(clientId?: string): Promise<DashboardSta
     }
   }
 
-  const tickets = clientId ? await getClientTickets(clientId) : (await getAllTickets()).tickets
+  const tickets = memoryDb.tickets.filter(ticket => !clientId || ticket.client_id === clientId)
 
   return {
     total: tickets.length,
@@ -357,24 +381,24 @@ export async function getDashboardStats(clientId?: string): Promise<DashboardSta
   }
 }
 
-export async function getAdminDashboardStats() {
-  const stats = await getDashboardStats()
+const getRatingSummary = cache(() => dbQuery<{ avg: string; total: number }>(
+  `SELECT COALESCE(ROUND(AVG(overall_rating)::numeric, 1), 5.0)::text AS avg,
+          COUNT(*)::int AS total FROM ticket_ratings`
+))
 
+export async function getAdminDashboardStats() {
   if (isNeonConfigured()) {
-    const [todayRows, resolutionRows, ratingRows] = await Promise.all([
+    const [stats, todayRows, resolutionRows, ratingRows] = await Promise.all([
+      getDashboardStats(),
       dbQuery<{ count: number }>(
-        `SELECT COUNT(*)::int AS count FROM tickets WHERE created_at::date = CURRENT_DATE`
+        `SELECT COUNT(*)::int AS count FROM tickets WHERE created_at >= CURRENT_DATE AND created_at < CURRENT_DATE + interval '1 day'`
       ),
       dbQuery<{ avg_hours: number | null }>(
         `SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600))::int AS avg_hours
          FROM tickets
          WHERE resolved_at IS NOT NULL`
       ),
-      dbQuery<{ avg: string; total: number }>(
-        `SELECT COALESCE(ROUND(AVG(overall_rating)::numeric, 1), 5.0)::text AS avg,
-                COUNT(*)::int AS total
-         FROM ticket_ratings`
-      ),
+      getRatingSummary(),
     ])
 
     return {
@@ -386,8 +410,9 @@ export async function getAdminDashboardStats() {
     }
   }
 
+  const stats = await getDashboardStats()
   const today = new Date().toISOString().slice(0, 10)
-  const allTickets = (await getAllTickets()).tickets
+  const allTickets = (await getAllTickets({ pageSize: Math.max(memoryDb.tickets.length, 1) })).tickets
   const newToday = allTickets.filter((t) => {
     const raw = t.created_at as unknown
     const dStr = raw instanceof Date ? raw.toISOString() : String(t.created_at || '')
@@ -811,7 +836,7 @@ export async function getAdminReportData() {
         dbQuery<{ date: string; count: number }>(
           `SELECT to_char(d.day, 'MM-DD') AS date, COUNT(t.id)::int AS count
            FROM generate_series(CURRENT_DATE - 29, CURRENT_DATE, interval '1 day') AS d(day)
-           LEFT JOIN tickets t ON t.created_at::date = d.day
+           LEFT JOIN tickets t ON t.created_at >= d.day AND t.created_at < d.day + interval '1 day'
            GROUP BY d.day
            ORDER BY d.day`
         ),
@@ -835,11 +860,7 @@ export async function getAdminReportData() {
            GROUP BY p.id, p.full_name
            ORDER BY p.full_name`
         ),
-        dbQuery<{ avg: string; total: number }>(
-          `SELECT COALESCE(ROUND(AVG(overall_rating)::numeric, 1), 5.0)::text AS avg,
-                  COUNT(*)::int AS total
-           FROM ticket_ratings`
-        ),
+        getRatingSummary(),
       ])
 
     return {

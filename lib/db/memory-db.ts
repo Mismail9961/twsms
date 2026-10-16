@@ -296,4 +296,7 @@ class MemoryDb {
   }
 }
 
-export const memoryDb = new MemoryDb()
+// Development bundles and hot reloads must share the same demo records.
+const demoGlobal = globalThis as typeof globalThis & { twsmsMemoryDb?: MemoryDb }
+export const memoryDb = demoGlobal.twsmsMemoryDb ?? new MemoryDb()
+if (process.env.NODE_ENV !== 'production') demoGlobal.twsmsMemoryDb = memoryDb

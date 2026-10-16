@@ -4,9 +4,16 @@ import { template } from './templates'
 import { appLink, unseal, validEmail, challengeDigest } from './security'
 import { DeliveryError, retryDelay, sendEmail } from './smtp'
 
-type Job = { id: string; kind: string; recipient_id: string; ticket_id: string | null; payload: { secret?: string }; attempts: number; created_at: string }
+type Job = { id: string; kind: string; recipient_id: string; ticket_id: string | null; payload: { secret?: string; enquiry?: string }; attempts: number; created_at: string }
 type User = { id: string; email: string; full_name: string; role: string; created_at: string }
 async function render(job: Job) {
+  if (job.kind === 'contact') {
+    const to = process.env.ADMIN_NOTIFICATION_EMAIL || ''
+    if (!validEmail(to) || !job.payload.enquiry) throw new DeliveryError('invalid_contact')
+    const enquiry = JSON.parse(unseal(job.payload.enquiry)) as Record<string, string>
+    const details = `Name: ${enquiry.name}\nEmail: ${enquiry.email}\nPhone: ${enquiry.phone || 'Not provided'}\nCompany: ${enquiry.company || 'Not provided'}\nService: ${enquiry.service || 'General enquiry'}\n\n${enquiry.message}`
+    return { to, through: undefined, mail: template('contact', 'Technology World team', details, appLink('/admin')) }
+  }
   const [user] = await emailQuery<User>("SELECT id,email,full_name,role,created_at FROM profiles WHERE id=$1 AND account_status='active'", [job.recipient_id])
   if (!user || !validEmail(user.email)) return null
   let to = user.email, kind = job.kind

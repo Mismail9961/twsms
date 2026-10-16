@@ -22,7 +22,7 @@ export default async function AdminTicketsPage({
   const priorityFilter = resolvedParams.priority || 'all'
   const categoryFilter = resolvedParams.category_id || 'all'
   const searchQuery = resolvedParams.search || ''
-  const page = parseInt(resolvedParams.page || '1', 10)
+  const page = Math.max(1, parseInt(resolvedParams.page || '1', 10) || 1)
 
   const [{ tickets, total }, categories] = await Promise.all([
     getAllTickets({

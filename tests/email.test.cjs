@@ -510,3 +510,45 @@ test('ticket ratings are allowed only for the owner of a resolved or closed tick
   assert.equal((await scalar('SELECT status FROM tickets WHERE id=$1', [ratedTicket.id])).status, 'closed')
   await actions.submitRating(ratedTicket.id, 4, 'guidance')
 })
+
+
+test('contact validation rejects malformed JSON shapes and invalid fields', async () => {
+  const { POST } = require('../app/api/contact/route.ts')
+  for (const value of [null, [], 'invalid']) {
+    const response = await POST(new Request('https://support.example.com/api/contact', { method: 'POST', body: JSON.stringify(value) }))
+    assert.equal(response.status, 400)
+  }
+  const invalid = await POST(new Request('https://support.example.com/api/contact', { method: 'POST', body: JSON.stringify({ name: 'Test', email: 'bad', message: 'short' }) }))
+  assert.equal(invalid.status, 422)
+})
+
+test('contact enquiries are durably queued encrypted and delivered to the admin', async () => {
+  const { POST } = require('../app/api/contact/route.ts')
+  const message = 'Network audit request <script>alert(1)</script>'
+  const response = await POST(new Request('https://support.example.com/api/contact', {
+    method: 'POST', body: JSON.stringify({ name: 'Enquiry Test', email: 'enquiry@example.com', message }),
+  }))
+  assert.equal(response.status, 202)
+  const job = await scalar("SELECT * FROM email_outbox WHERE kind='contact' ORDER BY created_at DESC LIMIT 1")
+  assert.ok(job.payload.enquiry)
+  assert.ok(!JSON.stringify(job.payload).includes('enquiry@example.com'))
+  assert.equal(JSON.parse(security.unseal(job.payload.enquiry)).message, message)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    await drain()
+    if ((await scalar('SELECT status FROM email_outbox WHERE id=$1', [job.id])).status === 'sent') break
+  }
+  const delivered = await scalar('SELECT status,payload FROM email_outbox WHERE id=$1', [job.id])
+  assert.equal(delivered.status, 'sent')
+  assert.deepEqual(delivered.payload, {})
+})
+
+test('lightweight chat access preserves client ownership and staff assignment rules', async () => {
+  const { getTicketAccess } = require('../lib/data/tickets.ts')
+  assert.ok(await getTicketAccess(ticket.id, { id: client.id, role: 'client' }))
+  assert.equal(await getTicketAccess(ticket.id, { id: other.id, role: 'client' }), null)
+  assert.ok(await getTicketAccess(ticket.id, { id: admin.id, role: 'admin' }))
+  await db.query('DELETE FROM ticket_assignments WHERE ticket_id=$1 AND employee_id=$2', [ticket.id, employee.id])
+  assert.equal(await getTicketAccess(ticket.id, { id: employee.id, role: 'employee' }), null)
+  await db.query('INSERT INTO ticket_assignments(ticket_id,employee_id,assigned_by) VALUES($1,$2,$3)', [ticket.id, employee.id, admin.id])
+  assert.ok(await getTicketAccess(ticket.id, { id: employee.id, role: 'employee' }))
+})

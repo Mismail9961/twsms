@@ -6,20 +6,21 @@ import { Mail, RefreshCw } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
+type EmailJob = { id: string; kind: string; status: string; attempts: number; last_error: string; created_at: string }
+
 export default async function EmailDeliveryPage() {
   const user = await getSession()
   if (user?.role !== 'admin') return null
 
-  const rows = await emailQuery<{
-    id: string
-    kind: string
-    status: string
-    attempts: number
-    last_error: string
-    created_at: string
-  }>(
-    'SELECT id,kind,status,attempts,last_error,created_at FROM email_outbox ORDER BY created_at DESC LIMIT 100'
-  )
+  let rows: EmailJob[] = []
+  let unavailable = false
+  try {
+    rows = await emailQuery<EmailJob>(
+      'SELECT id,kind,status,attempts,last_error,created_at FROM email_outbox ORDER BY created_at DESC LIMIT 100'
+    )
+  } catch {
+    unavailable = true
+  }
 
   return (
     <div className="space-y-6">
@@ -49,7 +50,9 @@ export default async function EmailDeliveryPage() {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 px-6 text-center text-xs text-gray-400">
-                    No email events currently in the outbox queue.
+                    {unavailable
+                      ? 'Email delivery logs are unavailable. Check your database connection and email setup, then refresh this page.'
+                      : 'No email events currently in the outbox queue.'}
                   </td>
                 </tr>
               ) : (

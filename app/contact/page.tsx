@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { ArrowLeftRight, ClipboardCheck, ShieldCheck, Package, Globe, Mail, Phone, MapPin, Clock, ArrowUpRight } from 'lucide-react'
-import { getSession, dashboardPathForRole } from '@/lib/auth/session'
 import { LandingNavbar } from '@/components/landing/navbar'
 import { LandingFooter } from '@/components/landing/footer'
 import { ContactForm } from '@/components/contact/contact-form'
@@ -45,13 +44,10 @@ const contactDetails = [
   { icon: Globe, label: 'Website', value: 'technology-world.net.pk', href: WEBSITE },
 ].filter((item) => item.value)
 
-export default async function ContactPage() {
-  const session = await getSession()
-  const dashboardHref = session ? dashboardPathForRole(session.role) : '/login'
-
+export default function ContactPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <LandingNavbar user={session} dashboardHref={dashboardHref} />
+      <LandingNavbar />
 
       <main className="relative flex-1 overflow-hidden text-[#2C2772]">
         {/* Background: dot grid + brand glow */}

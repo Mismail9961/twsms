@@ -1,4 +1,5 @@
 export const subjects: Record<string, string> = {
+  contact: 'New website enquiry',
   registration: 'Admin: New Client Registration', welcome: 'Welcome to Our Support Platform',
   verify: 'Verify Your Email Address', reset: 'Reset Your Password', login: 'New Login to Your Account',
   employee: 'Employee: Welcome to the Support Team', ticket: 'Admin: New Support Ticket Created',

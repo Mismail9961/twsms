@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, FileText, ShieldCheck } from 'lucide-react'
-import { getSession, dashboardPathForRole } from '@/lib/auth/session'
 import { LandingNavbar } from '@/components/landing/navbar'
 import { LandingFooter } from '@/components/landing/footer'
 
@@ -21,8 +20,7 @@ interface LegalPageProps {
 
 const focus = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6A63D9]'
 
-export async function LegalPage({ kind, title, introduction, summary, sections }: LegalPageProps) {
-  const session = await getSession()
+export function LegalPage({ kind, title, introduction, summary, sections }: LegalPageProps) {
   const Icon = kind === 'privacy' ? ShieldCheck : FileText
   const related = kind === 'privacy'
     ? { title: 'Terms & Conditions', href: '/terms', description: 'The guidelines for using our support portal.' }
@@ -33,7 +31,7 @@ export async function LegalPage({ kind, title, introduction, summary, sections }
       <a href="#legal-content" className={`sr-only z-[60] rounded-lg bg-white p-4 focus:fixed focus:left-4 focus:top-4 focus:not-sr-only ${focus}`}>
         Skip to policy content
       </a>
-      <LandingNavbar user={session} dashboardHref={session ? dashboardPathForRole(session.role) : '/login'} />
+      <LandingNavbar />
       <main className="flex-1">
         <div className="relative isolate overflow-hidden border-b border-[#2C2772]/10 bg-white">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10" style={{ backgroundImage: 'radial-gradient(ellipse at 90% 10%, #eeecff 0%, transparent 65%), radial-gradient(#2c277212 1px, transparent 1px)', backgroundSize: '100% 100%, 24px 24px' }} />

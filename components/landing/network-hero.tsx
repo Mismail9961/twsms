@@ -40,10 +40,10 @@ export function NetworkHero({
         <div className="flex flex-col items-center px-5 pb-14 pt-14 text-center sm:px-8 sm:pb-20 sm:pt-24 lg:pt-28">
           <p className="text-xs font-medium text-[#2C2772]/80 sm:text-sm">Our Services</p>
 
-          <h1 className="mt-3 max-w-3xl text-[2.1rem] font-normal leading-[1.08] tracking-tight sm:mt-4 sm:text-6xl lg:text-7xl">
+          <h2 className="mt-3 max-w-3xl text-[2.1rem] font-normal leading-[1.08] tracking-tight sm:mt-4 sm:text-6xl lg:text-7xl">
             We Create Best{' '}
             <span className="text-[#6A63D9]">Network Solutions</span>
-          </h1>
+          </h2>
 
           <p className="mt-5 max-w-xl text-sm leading-relaxed text-slate-500 sm:mt-6 sm:text-base">
             From design to deployment, our network solutions offer unparalleled
@@ -77,7 +77,7 @@ export function NetworkHero({
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold sm:text-base">{title}</h2>
+                <h3 className="text-sm font-semibold sm:text-base">{title}</h3>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500 sm:text-sm">{text}</p>
               </div>
             </li>
