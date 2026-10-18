@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     'Talk to Technology World about network migration, audits, security and supplies.',
 }
 
-const WEBSITE = 'https://technology-world.net.pk/#'
+
 
 const services = [
   {
@@ -41,7 +41,6 @@ const contactDetails = [
   { icon: Phone, label: 'Phone', value: '', href: '' }, // e.g. value: '+92 300 0000000', href: 'tel:+923000000000'
   { icon: MapPin, label: 'Address', value: '', href: '' },
   { icon: Clock, label: 'Working hours', value: '', href: '' },
-  { icon: Globe, label: 'Website', value: 'technology-world.net.pk', href: WEBSITE },
 ].filter((item) => item.value)
 
 export default function ContactPage() {

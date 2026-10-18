@@ -16,6 +16,7 @@ const navLinks = [
   { label: 'How It Works', href: '/#how-it-works' },
   { label: 'FAQ', href: '/#faq' },
   { label: 'Contact', href: '/contact' },
+  { label: 'About Us', href: '/about-us' },
 ]
 
 const focusRing =

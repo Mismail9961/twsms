@@ -33,7 +33,7 @@ function LinkedinIcon({ className }: IconProps) {
   )
 }
 
-const WEBSITE = 'https://technology-world.net.pk/#'
+const WEBSITE = 'https://twsms.vercel.app/  '
 
 const navigate = [
   { label: 'Features', href: '/#features' },
@@ -170,12 +170,7 @@ export function LandingFooter() {
                   <Link href="/signup" className={linkClass}>
                     Create a client account
                   </Link>
-                </li>
-                <li>
-                  <a href={WEBSITE} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    Visit our website
-                  </a>
-                </li>
+                </li> 
               </ul>
 
               <Link
