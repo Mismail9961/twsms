@@ -1,3 +1,4 @@
+import { defaultAchievements } from '../data/achievement-defaults'
 import type {
   Profile,
   Ticket,
@@ -13,6 +14,8 @@ import type {
 
 // In-memory data structures initialized with production-like seed data
 class MemoryDb {
+  achievements = defaultAchievements.map(achievement => ({ ...achievement }))
+
   profiles: Profile[] = [
     {
       id: 'a0000000-0000-0000-0000-000000000001',

@@ -1,12 +1,14 @@
 import { LandingNavbar } from "@/components/landing/navbar";
 import { HeroSection } from "@/components/landing/hero";
-import { NetworkHero } from "@/components/landing/network-hero";
 import { ContactHero } from "@/components/landing/contact-hero";
 import { FAQSection } from "@/components/landing/faq";
 import { LandingFooter } from "@/components/landing/footer";
-import { TestimonialsSection } from "@/components/landing/testimonials";
+import { ClientsSection } from "@/components/landing/testimonials";
 import { FeaturesSection } from "@/components/landing/features";
 import { HowItWorksSection } from "@/components/landing/how-it-works";
+import { StrategicPartners } from "@/components/landing/Strategicpartners";
+import { ServicesSection } from "@/components/landing/service";
+import { WeeklyAchievements } from "@/components/landing/achievements";
 
 export default function HomePage() {
   return (
@@ -15,17 +17,19 @@ export default function HomePage() {
       <LandingNavbar />
 
       <main className="flex-1">
-        {/* 2. Hero Section (ticket mockup + sign in) */}
         <HeroSection user={null} dashboardHref="/login" />
 
-        {/* 3. Our Services (Network Solutions) */}
-        <NetworkHero />
+        <WeeklyAchievements />
+
+        <ServicesSection />
 
         <FeaturesSection />
 
+        <StrategicPartners />
+
         <HowItWorksSection />
 
-        <TestimonialsSection />
+        <ClientsSection />
 
         <FAQSection />
 

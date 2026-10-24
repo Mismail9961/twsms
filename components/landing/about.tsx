@@ -1,10 +1,18 @@
 import {
   Eye,
-  Handshake,
-  Heart,
+  Users,
+  Layers,
+  Target,
   Lightbulb,
-  TrendingUp,
   BadgeCheck,
+  Puzzle,
+  Compass,
+  Handshake,
+  Headset,
+  Network,
+  ArrowRightLeft,
+  ClipboardList,
+  ShieldCheck,
   LucideIcon,
 } from 'lucide-react'
 
@@ -14,56 +22,112 @@ interface PointItem {
   description: string
 }
 
-const INTRO_LEAD =
-  'Founded with a vision to empower businesses through technology, Technology World is a leading network integration company based in Pakistan. With a relentless focus on innovation, quality, and customer satisfaction, we have established ourselves as a trusted partner for businesses across the country.'
+/* ---------- Content (from the Technology World company profile) ---------- */
 
-const INTRO_REST: string[] = [
-  'Our team comprises seasoned professionals with extensive experience in network infrastructure, cybersecurity, cloud computing, and IT consultancy. We are committed to delivering exceptional solutions that drive efficiency, productivity, and growth for our clients.',
-  'At Technology World, we believe in forging long-term partnerships built on trust, integrity, and mutual success. Discover why businesses trust us to deliver cutting-edge technology solutions that propel them towards greater heights.',
+const INTRO_LEAD =
+  'At TW, we provide high-quality, future-focused solutions tailored to unlock our clients’ full potential. By continuously investing in the development of our team, we ensure that our professionals remain at the forefront of industry trends, technologies, and best practices, empowering us to deliver innovative services that support long-term growth and success.'
+
+const INTRO_POINTS: PointItem[] = [
+  {
+    icon: Users,
+    title: 'Seasoned IT experts',
+    description:
+      'Our team delivers strategic, value-driven business and technology solutions tailored to meet your unique needs.',
+  },
+  {
+    icon: Layers,
+    title: 'A holistic approach',
+    description:
+      'With extensive industry insight spanning strategy, people, process, and technology, TW operates as an integrated extension of your team.',
+  },
+  {
+    icon: Target,
+    title: 'Measurable impact',
+    description:
+      'Leveraging hands-on experience, we ensure our clients receive solutions that are not only effective but also professionally executed with measurable impact.',
+  },
 ]
 
-const VISION =
-  'To be the leading provider of network integration solutions in Pakistan, renowned for our innovation, expertise, and commitment to customer satisfaction. We envision a future where every business has access to the technology they need to succeed and thrive in an increasingly interconnected world.'
+const VISION_POINTS: string[] = [
+  'To become a leading provider of innovative technology and strategic solutions for our clients.',
+  'To deliver business solutions that are secure, convenient, and cost-effective.',
+  'To help individuals and organizations realize and achieve their full potential.',
+  'To empower companies to produce their best work and successfully reach their target market.',
+]
 
-const MISSION: PointItem[] = [
+const STRATEGY: string[] = [
+  'At TW, we specialize in diverse IT system integration domains that work in harmony to deliver comprehensive, value-driven solutions. These synergistic services present a unified approach, enhancing the overall experience and results for our clients.',
+  'Our success is fueled by strategic alliances and a culture of collaboration. By fostering teamwork and aligning around a core value system centered on excellence, customer focus, and innovation, we’ve built lasting relationships with clients, partners, and stakeholders alike.',
+]
+
+const SERVICES: PointItem[] = [
   {
-    icon: Handshake,
-    title: 'Long-term partnerships',
+    icon: Headset,
+    title: 'Customer Support',
     description:
-      'We believe in building strong, long-term partnerships with our clients, based on trust, integrity, and mutual success.',
+      'Quarterly or annual support agreements with 24/7 or 8x5 response times. Next-business-day support, with on-call engineer visits as needed.',
   },
   {
-    icon: Heart,
-    title: 'Community and sustainability',
+    icon: Network,
+    title: 'Network Design & Services',
     description:
-      'Beyond business success, we are committed to making a positive difference in the communities we serve, through corporate social responsibility initiatives and environmental sustainability efforts.',
+      'We are vendor-neutral with deep expertise in designing and optimizing converged network infrastructures.',
   },
+  {
+    icon: ArrowRightLeft,
+    title: 'Network Migration',
+    description:
+      'We facilitate seamless migration of data and systems from legacy networks to modern infrastructure, minimizing downtime and risk.',
+  },
+  {
+    icon: ClipboardList,
+    title: 'Project Management',
+    description:
+      'Our senior consultants lead enterprise-level projects, ensuring quality delivery and timely implementation.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Audit Services',
+    description:
+      'We perform comprehensive network and security audits to detect vulnerabilities and ensure optimal performance, with corrective actions as needed.',
+  },
+]
+
+const VALUES: PointItem[] = [
   {
     icon: Lightbulb,
     title: 'Innovation',
     description:
-      'We are committed to driving innovation in the technology industry, constantly exploring new ideas and solutions to help businesses stay ahead of the curve.',
-  },
-]
-
-const STRATEGIES: PointItem[] = [
-  {
-    icon: TrendingUp,
-    title: 'Scalable solutions',
-    description:
-      'We understand that businesses come in all shapes and sizes, and their technology needs may vary. We offer scalable solutions that can grow and adapt alongside our clients’ businesses, ensuring they remain agile and competitive in a rapidly changing marketplace.',
+      'Driving industry leadership through proven and emerging technologies.',
   },
   {
     icon: BadgeCheck,
-    title: 'Uncompromising quality',
+    title: 'Quality',
     description:
-      'Quality is non-negotiable in everything we deliver. Whether it’s the products we supply or the services we provide, we maintain the highest standards of quality to ensure our clients receive reliable, efficient, and effective solutions.',
+      'Delivering value through expertise, advanced technology, and exceptional service.',
+  },
+  {
+    icon: Puzzle,
+    title: 'Solution',
+    description:
+      'Customizing ERP solutions, IT optimization, and technology services to meet each client’s unique needs.',
+  },
+  {
+    icon: Compass,
+    title: 'Strategy',
+    description:
+      'Empowering growth through insightful, tactical decision-making.',
+  },
+  {
+    icon: Handshake,
+    title: 'Partner',
+    description:
+      'Enabling our clients’ success through proactive, collaborative service.',
   },
 ]
 
 /* ---------- Background patterns ---------- */
 
-/* White dot grid on the indigo, fading out toward the edges */
 const dotGrid: React.CSSProperties = {
   backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1.2px)',
   backgroundSize: '24px 24px',
@@ -74,7 +138,6 @@ const dotGrid: React.CSSProperties = {
     'radial-gradient(ellipse 90% 60% at 50% 20%, #000 30%, transparent 100%)',
 }
 
-/* Fine diagonal hatch, left edge */
 const hatch: React.CSSProperties = {
   backgroundImage:
     'repeating-linear-gradient(135deg, #ffffff 0, #ffffff 1px, transparent 1px, transparent 14px)',
@@ -83,13 +146,11 @@ const hatch: React.CSSProperties = {
   maskImage: 'linear-gradient(to right, #000, transparent)',
 }
 
-/* Soft light bloom at the top */
 const glow: React.CSSProperties = {
   background:
     'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(255,255,255,0.16), transparent 70%)',
 }
 
-/* Indigo line grid used inside the white panels */
 const lineGrid: React.CSSProperties = {
   backgroundImage:
     'linear-gradient(#2c2772 1px, transparent 1px), linear-gradient(90deg, #2c2772 1px, transparent 1px)',
@@ -142,49 +203,85 @@ export function AboutSection() {
         </h1>
         <div className="mt-5 h-[3px] w-14 rounded-full bg-white sm:mt-6" />
 
-        <div className="mt-8 grid grid-cols-1 gap-8 sm:mt-10 lg:grid-cols-12 lg:gap-14">
-          <p className="text-base leading-relaxed text-white min-[375px]:text-[1.05rem] sm:text-xl sm:leading-8 lg:col-span-7">
-            {INTRO_LEAD}
-          </p>
-          <div className="space-y-4 border-t border-white/20 pt-6 text-sm leading-relaxed text-white/75 sm:text-[0.95rem] sm:leading-7 lg:col-span-5 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
-            {INTRO_REST.map((text) => (
-              <p key={text}>{text}</p>
-            ))}
-          </div>
+        <p className="mt-8 max-w-4xl text-base leading-relaxed text-white min-[375px]:text-[1.05rem] sm:mt-10 sm:text-xl sm:leading-8">
+          {INTRO_LEAD}
+        </p>
+
+        <div className="mt-10 grid grid-cols-1 gap-8 sm:mt-12 md:grid-cols-3 md:gap-8 lg:gap-12">
+          {INTRO_POINTS.map((item) => {
+            const Icon = item.icon
+            return (
+              <div key={item.title} className="min-w-0 border-t border-white/25 pt-6">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full border border-white/35 bg-white/10 text-white backdrop-blur">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h4 className="mt-4 break-words text-lg font-semibold text-white">
+                  {item.title}
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-white/75 sm:text-[0.95rem] sm:leading-7">
+                  {item.description}
+                </p>
+              </div>
+            )
+          })}
         </div>
 
         {/* ---------- Vision ---------- */}
-        <div className="relative mt-12 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-24px_rgba(8,6,40,0.7)] sm:mt-16 sm:rounded-3xl">
+        <div className="relative mt-14 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-24px_rgba(8,6,40,0.7)] sm:mt-20 sm:rounded-3xl">
           <div aria-hidden="true" className="absolute inset-0" style={lineGrid} />
           <Rings className="pointer-events-none absolute -bottom-16 -right-16 h-56 w-56 text-[#2c2772] opacity-[0.09] sm:h-72 sm:w-72" />
           <div className="absolute inset-y-0 left-0 w-1 bg-[#2c2772] sm:w-1.5" />
 
-          <div className="relative grid grid-cols-1 gap-5 p-6 pl-7 sm:p-10 sm:pl-12 lg:grid-cols-12 lg:gap-10 lg:p-14 lg:pl-16">
+          <div className="relative grid grid-cols-1 gap-6 p-6 pl-7 sm:p-10 sm:pl-12 lg:grid-cols-12 lg:gap-10 lg:p-14 lg:pl-16">
             <div className="flex items-center gap-3 lg:col-span-3 lg:items-start">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2c2772] text-white ring-4 ring-[#2c2772]/10">
                 <Eye className="h-5 w-5" />
               </span>
               <h3 className="font-serif text-2xl font-semibold text-[#2c2772] sm:text-3xl">
-                Vision
+                Our Vision
               </h3>
             </div>
-            <p className="font-serif text-[1.08rem] leading-relaxed text-[#2c2772] min-[375px]:text-xl sm:text-2xl sm:leading-snug lg:col-span-9 lg:text-[1.65rem]">
-              {VISION}
-            </p>
+
+            <ul className="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2 lg:col-span-9">
+              {VISION_POINTS.map((point) => (
+                <li
+                  key={point}
+                  className="border-l-2 border-[#2c2772]/25 pl-5 font-serif text-[1.05rem] leading-relaxed text-[#2c2772] sm:text-lg"
+                >
+                  {point}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
-        {/* ---------- Mission ---------- */}
+        {/* ---------- Strategy ---------- */}
         <div className="mt-14 sm:mt-20">
           <div className="flex items-center gap-4">
             <h3 className="shrink-0 font-serif text-2xl font-semibold text-white sm:text-3xl">
-              Mission
+              Our Strategy
             </h3>
             <div className="h-px flex-1 bg-white/25" />
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-8 sm:mt-8 md:grid-cols-3 md:gap-8 lg:gap-12">
-            {MISSION.map((item) => {
+          <div className="mt-6 grid grid-cols-1 gap-6 text-sm leading-relaxed text-white/80 sm:mt-8 sm:text-base sm:leading-7 md:grid-cols-2 md:gap-12">
+            {STRATEGY.map((text) => (
+              <p key={text}>{text}</p>
+            ))}
+          </div>
+        </div>
+
+        {/* ---------- Service Portfolio ---------- */}
+        <div className="mt-14 sm:mt-20">
+          <div className="flex items-center gap-4">
+            <h3 className="shrink-0 font-serif text-2xl font-semibold text-white sm:text-3xl">
+              Service Portfolio
+            </h3>
+            <div className="h-px flex-1 bg-white/25" />
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-8 sm:mt-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-10">
+            {SERVICES.map((item) => {
               const Icon = item.icon
               return (
                 <div key={item.title} className="min-w-0 border-t border-white/25 pt-6">
@@ -203,7 +300,7 @@ export function AboutSection() {
           </div>
         </div>
 
-        {/* ---------- Key Strategies ---------- */}
+        {/* ---------- Our Values ---------- */}
         <div className="relative mt-14 overflow-hidden rounded-2xl bg-white shadow-[0_30px_60px_-24px_rgba(8,6,40,0.7)] sm:mt-20 sm:rounded-3xl">
           <div aria-hidden="true" className="absolute inset-0" style={lineGrid} />
           <Rings className="pointer-events-none absolute -bottom-16 -right-16 h-56 w-56 text-[#2c2772] opacity-[0.09] sm:h-72 sm:w-72" />
@@ -211,28 +308,21 @@ export function AboutSection() {
 
           <div className="relative p-6 sm:p-10 lg:p-14">
             <h3 className="font-serif text-2xl font-semibold text-[#2c2772] sm:text-3xl">
-              Key Strategies
+              Our Values
             </h3>
 
-            <div className="mt-7 grid grid-cols-1 sm:mt-9 md:grid-cols-2">
-              {STRATEGIES.map((item, i) => {
+            <div className="mt-7 grid grid-cols-1 gap-8 sm:mt-9 sm:grid-cols-2 lg:grid-cols-5 lg:gap-6">
+              {VALUES.map((item) => {
                 const Icon = item.icon
                 return (
-                  <div
-                    key={item.title}
-                    className={`min-w-0 ${
-                      i === 0
-                        ? 'md:pr-10 lg:pr-14'
-                        : 'mt-8 border-t border-[#2c2772]/15 pt-8 md:mt-0 md:border-l md:border-t-0 md:pl-10 md:pt-0 lg:pl-14'
-                    }`}
-                  >
+                  <div key={item.title} className="min-w-0">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2c2772] text-white shadow-sm ring-4 ring-[#2c2772]/10">
                       <Icon className="h-5 w-5" />
                     </span>
                     <h4 className="mt-4 break-words text-lg font-semibold text-[#2c2772] sm:text-xl">
                       {item.title}
                     </h4>
-                    <p className="mt-2 text-sm leading-relaxed text-[#2c2772]/75 sm:text-base sm:leading-7">
+                    <p className="mt-2 text-sm leading-relaxed text-[#2c2772]/75 sm:text-[0.95rem] sm:leading-7">
                       {item.description}
                     </p>
                   </div>

@@ -205,7 +205,19 @@ CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_ticket ON audit_logs(ticket_id);
 
 -- =============================================================================
--- 12. SEED DEFAULT CATEGORIES
+-- 12. HOMEPAGE ACHIEVEMENTS
+-- A constrained primary-key slot enforces the five-achievement limit under concurrent writes.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS achievements (
+  slot smallint PRIMARY KEY CHECK (slot BETWEEN 1 AND 5),
+  achievement_date date NOT NULL,
+  category text NOT NULL CHECK (length(trim(category)) BETWEEN 1 AND 80),
+  title text NOT NULL CHECK (length(trim(title)) BETWEEN 1 AND 200),
+  description text NOT NULL CHECK (length(trim(description)) BETWEEN 1 AND 2000)
+);
+
+-- =============================================================================
+-- 13. SEED DEFAULT CATEGORIES
 -- =============================================================================
 INSERT INTO ticket_categories (name, description, is_active) VALUES
   ('Cloud Infrastructure & DevOps', 'Servers, cloud deployments, AWS, Azure, CI/CD pipeline issues', true),

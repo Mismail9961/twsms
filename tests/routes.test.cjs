@@ -11,7 +11,7 @@ const { proxy } = require('../proxy.ts')
 
 test('public documents bypass authentication queries even with a stale session cookie', async () => {
   databaseCalls = 0
-  for (const path of ['/', '/contact', '/privacy', '/terms']) {
+  for (const path of ['/', '/about-us', '/contact', '/privacy', '/terms']) {
     const response = await proxy(new NextRequest(`https://support.example.com${path}`, { headers: { cookie: 'twsms_session=expired' } }))
     assert.equal(response.status, 200)
     assert.equal(response.headers.get('set-cookie'), null, 'public HTML must not set personalised cookies')
@@ -19,8 +19,14 @@ test('public documents bypass authentication queries even with a stale session c
   assert.equal(databaseCalls, 0)
 })
 
+test('About Us is accessible without signing in', async () => {
+  const response = await proxy(new NextRequest('https://support.example.com/about-us'))
+  assert.equal(response.status, 200)
+  assert.equal(response.headers.get('location'), null)
+})
+
 test('protected dashboards redirect signed-out users; public-like prefixes are not public', async () => {
-  for (const path of ['/admin', '/client/tickets', '/employee', '/privacy-private', '/login-other']) {
+  for (const path of ['/admin', '/client/tickets', '/employee', '/about-us-private', '/privacy-private', '/login-other']) {
     const response = await proxy(new NextRequest(`https://support.example.com${path}`))
     const redirect = new URL(response.headers.get('location'))
     assert.equal(redirect.pathname, '/login')

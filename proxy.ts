@@ -14,6 +14,7 @@ const PUBLIC_ROUTES = [
   ...AUTH_ROUTES,
   '/verify-email',
   '/unauthorized',
+  '/about-us',
   '/contact',
   '/contact-us',
   '/privacy',
@@ -48,7 +49,7 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/contact-us') {
     return NextResponse.redirect(new URL('/contact', request.url))
   }
-  if (['/', '/contact', '/privacy', '/terms'].includes(pathname)) {
+  if (['/', '/about-us', '/contact', '/privacy', '/terms'].includes(pathname)) {
     return NextResponse.next()
   }
 
